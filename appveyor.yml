@@ -1,0 +1,17 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+
+configuration:
+  - Release
+
+platform:
+  - x86
+
+artifacts:
+#  - path: 'Release\CompactMeter.exe'
+  - path: CompactMeter_$(APPVEYOR_BUILD_NUMBER).zip
+
+after_build:
+  - copy Release\CompactMeter.exe .
+  - 7z a CompactMeter_%APPVEYOR_BUILD_NUMBER%.zip CompactMeter.exe
+
