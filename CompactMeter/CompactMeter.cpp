@@ -221,14 +221,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
-	// ウィンドウのドラッグ
 	case WM_LBUTTONDOWN:
-		g_dragging = true;
-		printf("drag on\n");
 		ReleaseCapture();
-		SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
-		g_dragging = false;
-		printf("drag off\n");
+		if (GetKeyState(VK_SHIFT) & 0x8000) {
+			// Shift+ドラッグでリサイズ(暫定)
+			SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0);
+		}
+		else {
+			// ドラッグで移動
+			g_dragging = true;
+			printf("drag on\n");
+			SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+			g_dragging = false;
+			printf("drag off\n");
+		}
+		return 0;
+
+	case WM_GETMINMAXINFO:
+		MINMAXINFO *pmmi;
+		pmmi = (MINMAXINFO*)lParam;
+		pmmi->ptMinTrackSize.x = 300;
+		pmmi->ptMinTrackSize.y = 300;
 		return 0;
 
     default:
