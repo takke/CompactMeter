@@ -22,6 +22,10 @@ HINSTANCE hInst;                                // 現在のインスタンス
 WCHAR szTitle[MAX_LOADSTRING];                  // タイトル バーのテキスト
 WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ クラス名
 
+Bitmap* g_offScreenBitmap = NULL;
+Graphics* g_offScreen = NULL;
+
+
 // ドラッグ中
 boolean g_dragging = false;
 MyInifileUtil* g_pMyInifile = NULL;
@@ -147,10 +151,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	GdiplusStartupInput gdiSI;
 	static ULONG_PTR gdiToken = NULL;
 
-	static Bitmap* offScreenBitmap = NULL;
-	static Graphics* offScreen = NULL;
-
-
     switch (message)
     {
 	case WM_CREATE:
@@ -159,8 +159,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		GdiplusStartup(&gdiToken, &gdiSI, NULL);
 
 		// OffScreen
-		offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
-		offScreen = new Graphics(offScreenBitmap);
+		g_offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
+		g_offScreen = new Graphics(g_offScreenBitmap);
 
 		// スレッド準備
 		pMyWorker = new CWorker();
@@ -199,7 +199,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
 
-			DrawAll(hWnd, hdc, ps, pMyWorker, offScreen, offScreenBitmap);
+			DrawAll(hWnd, hdc, ps, pMyWorker, g_offScreen, g_offScreenBitmap);
 
 			EndPaint(hWnd, &ps);
         }
@@ -248,6 +248,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_pMyInifile->mWindowWidth = rectWindow.right;
 			g_pMyInifile->mWindowHeight = rectWindow.bottom;
 			g_pMyInifile->save();
+
+			// オフスクリーン再生成
+			if (g_offScreenBitmap != NULL) {
+				delete g_offScreenBitmap;
+			}
+			if (g_offScreen != NULL) {
+				delete g_offScreen;
+			}
+			g_offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
+			g_offScreen = new Graphics(g_offScreenBitmap);
 		}
 		return 0;
 
@@ -349,9 +359,23 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 		g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
 
 
+		//--------------------------------------------------
+		// CPU タコメーター描画
+		//--------------------------------------------------
+
+		float xbase = 10.0f;
+		float ybase = 30.0f;
+		// sample
+		{
+			rect = Gdiplus::RectF(xbase, ybase, 200.0f, 200.0f);
+			float percent = (i % 100) * 1.0f;	// [0, 100]
+			str.Format(L"CPU (%.0f%%)", percent);
+			DrawMeter(g, rect, percent, mainBrush, str);
+		}
+
 
 		//--------------------------------------------------
-		// タコメーター描画
+		// Network タコメーター描画
 		//--------------------------------------------------
 
 		DWORD MB = 1024 * 1024;
@@ -360,18 +384,16 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 		int height = 200;
 
 		// Up(byte単位)
-		float xbase = 10.0f;
-		float ybase = 30.0f;
-		rect = Gdiplus::RectF(xbase, ybase, 200.0f, 200.0f);
-		percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
-		str.Format(L"▲ %.0f[b/s], %.0f%%", outb, percent);
-		DrawMeter(g, rect, percent, mainBrush, str);
+		//rect = Gdiplus::RectF(xbase, ybase, 200.0f, 200.0f);
+		//percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
+		//str.Format(L"▲ %.0f[b/s], %.0f%%", outb, percent);
+		//DrawMeter(g, rect, percent, mainBrush, str);
 
 		// Down(byte単位)
-		rect = Gdiplus::RectF(xbase + 250.0f, ybase, 200.0f, 200.0f);
-		percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
-		str.Format(L"▼ %.0f[b/s], %.0f%%", inb, percent);
-		DrawMeter(g, rect, percent, mainBrush, str);
+		//rect = Gdiplus::RectF(xbase + 250.0f, ybase, 200.0f, 200.0f);
+		//percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
+		//str.Format(L"▼ %.0f[b/s], %.0f%%", inb, percent);
+		//DrawMeter(g, rect, percent, mainBrush, str);
 
 		// kB単位
 		maxTrafficBytes /= 1024;
@@ -387,18 +409,13 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 		DrawMeter(g, rect, percent, mainBrush, str);
 
 		// Down(kB単位)
-		rect = Gdiplus::RectF(xbase + 250.0f, y, 200.0f, 200.0f);
+		rect = Gdiplus::RectF(xbase + 210.0f, y, 200.0f, 200.0f);
 		percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
 		percent = percent < 0.0f ? 0.0f : percent;
 		str.Format(L"▼ %.1f[kb/s], %.1f%%", inb, percent);
 		DrawMeter(g, rect, percent, mainBrush, str);
 
 
-		// sample
-		//rect = Gdiplus::RectF(100.0f, 150.0f+ height *2, 200.0f, 200.0f);
-		//percent = (i % 10) * 10.0f;	// [0, 100]
-		//str.Format(L"Sample (%.0f%%)", percent);
-		//DrawMeter(g, rect, percent, mainBrush, str);
 	}
 
 

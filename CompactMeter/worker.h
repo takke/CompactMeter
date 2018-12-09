@@ -18,6 +18,7 @@ public:
 	static DWORD WINAPI ThreadFunc(LPVOID lpParameter);
 	void Terminate();
 
+	// Network
 	std::vector<Traffic> traffics;
 
 
