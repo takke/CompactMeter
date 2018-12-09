@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "CompactMeter.h"
 #include "worker.h"
+#include "MyInifileUtil.h"
 
 using namespace Gdiplus;
 
@@ -11,20 +12,24 @@ using namespace Gdiplus;
 
 #define PI 3.14159265f
 
-// グローバル変数:
-DWORD threadId;    // スレッド ID 
+//--------------------------------------------------
+// グローバル変数
+//--------------------------------------------------
+DWORD threadId = 0;    // スレッド ID 
+CWorker* pMyWorker = NULL;
 
-int screenWidth = 800;
-int screenHeight = 800;
-
-HINSTANCE hInst;                                // 現在のインターフェイス
+HINSTANCE hInst;                                // 現在のインスタンス
 WCHAR szTitle[MAX_LOADSTRING];                  // タイトル バーのテキスト
 WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ クラス名
 
+// ドラッグ中
 boolean g_dragging = false;
+MyInifileUtil* g_pMyInifile = NULL;
 
 
-// このコード モジュールに含まれる関数の宣言を転送します:
+//--------------------------------------------------
+// プロトタイプ宣言
+//--------------------------------------------------
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -34,22 +39,23 @@ void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, 
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+                      _In_opt_ HINSTANCE hPrevInstance,
+                      _In_ LPWSTR    lpCmdLine,
+                      _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-
-    // TODO: ここにコードを挿入してください。
 
     // グローバル文字列を初期化する
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_COMPACTMETER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
+	g_pMyInifile = new MyInifileUtil();
+	g_pMyInifile->load();
+
     // アプリケーション初期化の実行:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
     }
@@ -109,22 +115,21 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // グローバル変数にインスタンス ハンドルを格納する
+	hInst = hInstance; // グローバル変数にインスタンス ハンドルを格納する
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, 
-//		WS_OVERLAPPEDWINDOW,
-		WS_POPUP,
-		CW_USEDEFAULT, 0, 700, 700, nullptr, nullptr, hInstance, nullptr);
+	HWND hWnd = CreateWindowW(szWindowClass, szTitle, 
+					WS_POPUP,
+					g_pMyInifile->mPosX, g_pMyInifile->mPosY,
+					g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight, nullptr, nullptr, hInstance, nullptr);
+	if (!hWnd)
+	{
+		return FALSE;
+	}
 
-   if (!hWnd)
-   {
-      return FALSE;
-   }
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
-
-   return TRUE;
+	return TRUE;
 }
 
 //
@@ -141,7 +146,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	GdiplusStartupInput gdiSI;
 	static ULONG_PTR gdiToken = NULL;
-	static CWorker* pMyWorker = NULL;
 
 	static Bitmap* offScreenBitmap = NULL;
 	static Graphics* offScreen = NULL;
@@ -155,13 +159,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		GdiplusStartup(&gdiToken, &gdiSI, NULL);
 
 		// OffScreen
-		offScreenBitmap = new Bitmap(screenWidth, screenHeight);
+		offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
 		offScreen = new Graphics(offScreenBitmap);
 
 		// スレッド準備
 		pMyWorker = new CWorker();
 		pMyWorker->SetParams(hWnd);
-		DWORD threadId;
 
 		// スレッドの作成 
 		HANDLE hThread = CreateThread(NULL, 0,
@@ -204,7 +207,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_DESTROY:
 		// 終了処理
-
 		pMyWorker->Terminate();
 
 		GdiplusShutdown(gdiToken);
@@ -234,6 +236,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
 			g_dragging = false;
 			printf("drag off\n");
+		}
+		return 0;
+
+	case WM_SIZE:
+		{
+			// サイズ変更 => INIにサイズを保存
+			RECT rectWindow;
+			GetClientRect(hWnd, &rectWindow);
+//			printf("size: %dx%d\n", rectWindow.right, rectWindow.bottom);
+			g_pMyInifile->mWindowWidth = rectWindow.right;
+			g_pMyInifile->mWindowHeight = rectWindow.bottom;
+			g_pMyInifile->save();
+		}
+		return 0;
+
+	case WM_MOVE:
+		{
+			// 移動 => INIにイチを保存
+			int x = LOWORD(lParam);
+			int y = HIWORD(lParam);
+			g_pMyInifile->mPosX = x;
+			g_pMyInifile->mPosY = y;
+			g_pMyInifile->save();
 		}
 		return 0;
 
@@ -285,7 +310,7 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 	format.SetAlignment(StringAlignmentNear);
 	SolidBrush mainBrush(Color(255, 192, 192, 192));
 	SolidBrush backgroundBrush(Color(255, 10, 10, 10));
-	Gdiplus::RectF rect = Gdiplus::RectF(0.0f, 0.0f, (float)screenWidth, (float)screenHeight);
+	Gdiplus::RectF rect = Gdiplus::RectF(0.0f, 0.0f, (float)g_pMyInifile->mWindowWidth, (float)g_pMyInifile->mWindowHeight);
 
 	g.FillRectangle(&backgroundBrush, rect);
 
