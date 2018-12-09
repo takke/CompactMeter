@@ -7,12 +7,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CompactMeter", "CompactMete
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_console|x64 = Debug_console|x64
+		Debug_console|x86 = Debug_console|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Debug_console|x64.ActiveCfg = Debug_console|x64
+		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Debug_console|x64.Build.0 = Debug_console|x64
+		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Debug_console|x86.ActiveCfg = Debug_console|Win32
+		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Debug_console|x86.Build.0 = Debug_console|Win32
 		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Debug|x64.ActiveCfg = Debug|x64
 		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Debug|x64.Build.0 = Debug|x64
 		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Debug|x86.ActiveCfg = Debug|Win32
