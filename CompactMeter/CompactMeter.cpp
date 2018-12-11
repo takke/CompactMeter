@@ -352,9 +352,14 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 		rect.Offset(0, 30);
 		g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
 
+		CString strDateTime;
+		SYSTEMTIME st;
+		GetLocalTime(&st);
+		strDateTime.Format(L"%d/%d/%d %d:%d:%d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+
 		RECT rectWindow;
 		GetClientRect(hWnd, &rectWindow);
-		str.Format(L"i=%d, n=%d size=%dx%d", i, pWorker->traffics.size(), rectWindow.right, rectWindow.bottom);
+		str.Format(L"i=%d, n=%d size=%dx%d %s", i, pWorker->traffics.size(), rectWindow.right, rectWindow.bottom, (LPCTSTR)strDateTime);
 		rect.Offset(0, 30);
 		g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
 
