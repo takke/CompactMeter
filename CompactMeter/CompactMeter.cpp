@@ -40,8 +40,8 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 void                DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap);
-void				DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush, float screenWidth, float screenHeight);
-void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, SolidBrush& mainBrush, const WCHAR* str);
+void				DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
+void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, const Color& color);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -332,7 +332,6 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 	//--------------------------------------------------
 	// dump
 	//--------------------------------------------------
-	SolidBrush mainBrush(Color(255, 192, 192, 192));
 	SolidBrush backgroundBrush(Color(255, 10, 10, 10));
 	float screenWidth = (float)g_pMyInifile->mWindowWidth;
 	float screenHeight = (float)g_pMyInifile->mWindowHeight;
@@ -344,7 +343,7 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 
 		pWorker->criticalSection.Lock();
 
-		DrawMeters(g, hWnd, pWorker, mainBrush, screenWidth, screenHeight);
+		DrawMeters(g, hWnd, pWorker, screenWidth, screenHeight);
 
 		pWorker->criticalSection.Unlock();
 	}
@@ -356,7 +355,7 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
 	onScreen.DrawImage(offScreenBitmap, 0, 0);
 }
 
-void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush, float screenWidth, float screenHeight)
+void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight)
 {
 	Gdiplus::RectF rect;
 
@@ -385,6 +384,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	//--------------------------------------------------
 	// CPU タコメーター描画
 	//--------------------------------------------------
+	Color colorCpu(255, 192, 192, 192);
 
 	CpuUsage cpuUsage;
 	int nCore = pWorker->GetCpuUsage(&cpuUsage);
@@ -396,8 +396,8 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	{
 		rect = Gdiplus::RectF(xbase, ybase, size, size);
 		float percent = cpuUsage.usages[0];
-		str.Format(L"CPU (%.1f%%)", percent);
-		DrawMeter(g, rect, percent, mainBrush, str);
+		str.Format(L"CPU (%.0f%%)", percent);
+		DrawMeter(g, rect, percent, str, colorCpu);
 	}
 
 	// 各CPU
@@ -416,8 +416,8 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 			rect = Gdiplus::RectF(xbase + size + padding, y, size, size);
 		}
 		float percent = cpuUsage.usages[i + 1];
-		str.Format(L"Core%d (%.1f%%)", i + 1, percent);
-		DrawMeter(g, rect, percent, mainBrush, str);
+		str.Format(L"Core%d (%.0f%%)", i + 1, percent);
+		DrawMeter(g, rect, percent, str, colorCpu);
 	}
 	y += height * 1;
 	if (y + size >= screenHeight) {
@@ -428,6 +428,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	//--------------------------------------------------
 	// Network タコメーター描画
 	//--------------------------------------------------
+	Color colorNet(255, 96, 192, 96);
 
 	DWORD MB = 1024 * 1024;
 	DWORD maxTrafficBytes = 100 * MB;
@@ -437,13 +438,13 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	//rect = Gdiplus::RectF(xbase, ybase, 200.0f, 200.0f);
 	//percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
 	//str.Format(L"▲ %.0f[b/s], %.0f%%", outb, percent);
-	//DrawMeter(g, rect, percent, mainBrush, str);
+	//DrawMeter(g, rect, percent, str, colorNet);
 
 	// Down(byte単位)
 	//rect = Gdiplus::RectF(xbase + 250.0f, ybase, 200.0f, 200.0f);
 	//percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
 	//str.Format(L"▼ %.0f[b/s], %.0f%%", inb, percent);
-	//DrawMeter(g, rect, percent, mainBrush, str);
+	//DrawMeter(g, rect, percent, str, colorNet);
 
 	// kB単位
 	maxTrafficBytes /= 1024;
@@ -455,14 +456,14 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
 	percent = percent < 0.0f ? 0.0f : percent;
 	str.Format(L"▲ %.1f KB/s", outb);
-	DrawMeter(g, rect, percent, mainBrush, str);
+	DrawMeter(g, rect, percent, str, colorNet);
 
 	// Down(kB単位)
 	rect = Gdiplus::RectF(xbase + size + padding, y, size, size);
 	percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
 	percent = percent < 0.0f ? 0.0f : percent;
 	str.Format(L"▼ %.1f KB/s", inb);
-	DrawMeter(g, rect, percent, mainBrush, str);
+	DrawMeter(g, rect, percent, str, colorNet);
 	y += height * 1;
 
 	//--------------------------------------------------
@@ -488,6 +489,8 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	//rect.Offset(0, 30);
 	//g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
 
+	SolidBrush mainBrush(Color(255, 192, 192, 192));
+
 	CString strDateTime;
 	SYSTEMTIME st;
 	GetLocalTime(&st);
@@ -502,10 +505,11 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 
 }
 
-void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, SolidBrush& mainBrush, const WCHAR* str)
+void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, const Color& color)
 {
 	// ペン
-	Pen p(Color(255, 192, 192, 192), 1);
+	Pen p(color, 1);
+	SolidBrush mainBrush(color);
 
 	// アンチエイリアス
 //	g.SetSmoothingMode(SmoothingModeNone);
