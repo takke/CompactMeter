@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "worker.h"
+#include "Logger.h"
 
 extern boolean g_dragging;
 
@@ -29,6 +30,8 @@ DWORD WINAPI CWorker::ThreadFunc(LPVOID lpParameter)
 
 DWORD WINAPI CWorker::ExecThread()
 {
+	Logger::d(L"Worker start");
+
 	while (true) {
 
 		if (!g_dragging) {
@@ -48,6 +51,9 @@ DWORD WINAPI CWorker::ExecThread()
 			break;
 		}
 	}
+
+	Logger::d(L"Worker end");
+
 	return S_OK;
 }
 
@@ -99,6 +105,8 @@ void CWorker::CollectTraffic()
 
 void CWorker::Terminate()
 {
+	Logger::d(L"Worker terminate");
+
 	WaitForSingleObject(myMutex, 0);
 	myExitFlag = true;
 	ReleaseMutex(myMutex);

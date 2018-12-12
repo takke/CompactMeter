@@ -5,6 +5,7 @@
 #include "CompactMeter.h"
 #include "worker.h"
 #include "MyInifileUtil.h"
+#include "Logger.h"
 
 using namespace Gdiplus;
 
@@ -55,6 +56,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDC_COMPACTMETER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
+	Logger::Setup();
+
 	g_pMyInifile = new MyInifileUtil();
 	g_pMyInifile->load();
 
@@ -78,7 +81,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
-    return (int) msg.wParam;
+	Logger::Close();
+	
+	return (int) msg.wParam;
 }
 
 //
@@ -225,18 +230,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_LBUTTONDOWN:
 		ReleaseCapture();
+
+		g_dragging = true;
 		if (GetKeyState(VK_SHIFT) & 0x8000) {
 			// Shift+ドラッグでリサイズ(暫定)
+			Logger::d(L"resize start");
 			SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0);
+			Logger::d(L"resize end");
 		}
 		else {
 			// ドラッグで移動
-			g_dragging = true;
-			printf("drag on\n");
+			Logger::d(L"drag start");
 			SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
-			g_dragging = false;
-			printf("drag off\n");
+			Logger::d(L"drag end");
 		}
+		g_dragging = false;
 		return 0;
 
 	case WM_SIZE:
@@ -245,6 +253,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			RECT rectWindow;
 			GetClientRect(hWnd, &rectWindow);
 //			printf("size: %dx%d\n", rectWindow.right, rectWindow.bottom);
+
+			Logger::d(L"サイズ変更 %dx%d => %dx%d",
+				g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight,
+				rectWindow.right, rectWindow.bottom);
+
+			if (g_pMyInifile->mWindowWidth == rectWindow.right && g_pMyInifile->mWindowHeight == rectWindow.bottom) {
+				Logger::d(L"同一なので無視");
+				return 0;
+			}
+
 			g_pMyInifile->mWindowWidth = rectWindow.right;
 			g_pMyInifile->mWindowHeight = rectWindow.bottom;
 			g_pMyInifile->save();
@@ -258,6 +276,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			g_offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
 			g_offScreen = new Graphics(g_offScreenBitmap);
+
 		}
 		return 0;
 

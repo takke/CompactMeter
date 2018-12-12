@@ -1,16 +1,13 @@
 #include "stdafx.h"
 #include "MyInifileUtil.h"
+#include "MyUtil.h"
+#include "Logger.h"
 
 
 MyInifileUtil::MyInifileUtil()
 {
-	TCHAR modulePath[MAX_PATH];
-	GetModuleFileName(NULL, modulePath, MAX_PATH);
-
-	TCHAR drive[MAX_PATH + 1], dir[MAX_PATH + 1], fname[MAX_PATH + 1], ext[MAX_PATH + 1];
-	_wsplitpath_s(modulePath, drive, dir, fname, ext);
-
-	mInifilePath.Format(L"%s%s\\%s", drive, dir, L"CompactMeter.ini");
+	CString directoryPath = MyUtil::GetModuleDirectoryPath();
+	mInifilePath.Format(L"%s\\%s", (LPCWSTR)directoryPath, L"CompactMeter.ini");
 }
 
 
@@ -25,6 +22,8 @@ void MyInifileUtil::load()
 	mWindowHeight = GetPrivateProfileInt(szAppName, L"WindowHeight", 700, mInifilePath);
 	mPosX = GetPrivateProfileInt(szAppName, L"PosX", 0, mInifilePath);
 	mPosY = GetPrivateProfileInt(szAppName, L"PosY", 0, mInifilePath);
+
+	Logger::d(L"ini file loaded");
 }
 
 
