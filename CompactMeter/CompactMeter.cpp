@@ -454,21 +454,16 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	rect = Gdiplus::RectF(xbase, y, size, size);
 	percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
 	percent = percent < 0.0f ? 0.0f : percent;
-	str.Format(L"▲ %.1f[kb/s], %.1f%%", outb, percent);
+	str.Format(L"▲ %.1f KB/s", outb);
 	DrawMeter(g, rect, percent, mainBrush, str);
 
 	// Down(kB単位)
 	rect = Gdiplus::RectF(xbase + size + padding, y, size, size);
 	percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
 	percent = percent < 0.0f ? 0.0f : percent;
-	str.Format(L"▼ %.1f[kb/s], %.1f%%", inb, percent);
+	str.Format(L"▼ %.1f KB/s", inb);
 	DrawMeter(g, rect, percent, mainBrush, str);
 	y += height * 1;
-
-	if (y + size >= screenHeight) {
-		return;
-	}
-
 
 	//--------------------------------------------------
 	// デバッグ表示
@@ -478,9 +473,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, SolidBrush& mainBrush,
 	format.SetAlignment(StringAlignmentNear);
 
 	// 開始 Y 座標
-	y += height * 1;
-	rect = Gdiplus::RectF(xbase, y, (float)g_pMyInifile->mWindowWidth, (float)g_pMyInifile->mWindowHeight);
-//		rect.Offset(0, 390);
+	rect = Gdiplus::RectF(xbase, y, screenWidth, screenHeight-y);
 
 	//str.Format(L"Up=%lld(%lld), Down=%lld(%lld)",
 	//	t.out, t.out - t0.out,
