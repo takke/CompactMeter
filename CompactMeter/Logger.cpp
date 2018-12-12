@@ -11,7 +11,7 @@ void Logger::Setup()
 
 	filename = directoryPath + L"\\log.txt";
 
-	_wfopen_s(&fp, filename.c_str(), L"a+, ccs=UTF-8");
+	_wfopen_s(&fp, filename.c_str(), L"a, ccs=UTF-8");
 }
 
 void Logger::Close()

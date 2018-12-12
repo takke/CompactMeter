@@ -8,6 +8,12 @@ struct Traffic {
 	DWORD tick;
 };
 
+struct CpuUsage {
+	// index=0 が all
+	// index=1 以降が各コアのCPU使用率
+	std::vector<float> usages;
+};
+
 class CWorker
 {
 public:
@@ -18,9 +24,15 @@ public:
 	static DWORD WINAPI ThreadFunc(LPVOID lpParameter);
 	void Terminate();
 
+	CComCriticalSection criticalSection;
+
 	// Network
 	std::vector<Traffic> traffics;
 
+	// CPU使用率
+	std::vector<CpuUsage> cpuUsages;
+
+	int GetCpuUsage(CpuUsage* out);
 
 private:
 	HWND hWnd;

@@ -19,6 +19,9 @@
 #include <Gdiplus.h>
 #pragma comment(lib, "Gdiplus.lib")
 
+#include <pdh.h>    
+#pragma comment(lib, "pdh.lib")
+
 // C ランタイム ヘッダー ファイル
 #include <stdlib.h>
 #include <malloc.h>
