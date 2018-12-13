@@ -12,7 +12,8 @@ public:
 
 	MyInifileUtil();
 	~MyInifileUtil();
-	void load();
-	void save();
+	void Load();
+	void Save();
+	void WriteIntEntry(LPCTSTR key, int value);
 };
 
