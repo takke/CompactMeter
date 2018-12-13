@@ -41,7 +41,7 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 void                DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap);
 void				DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, const Color& color);
+void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -505,8 +505,16 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
 }
 
-void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, const Color& color)
+void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color)
 {
+	if (percent >= 90.0) {
+		color = Color(255, 64, 64);
+	} else if (percent >= 80.0) {
+		color = Color(255, 128, 64);
+	} else if (percent >= 70.0) {
+		color = Color(192, 192, 64);
+	}
+
 	// ペン
 	Pen p(color, 1);
 	SolidBrush mainBrush(color);
