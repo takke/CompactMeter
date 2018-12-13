@@ -13,5 +13,4 @@ artifacts:
 
 after_build:
   - copy Release\CompactMeter.exe .
-  - 7z a CompactMeter_%APPVEYOR_BUILD_NUMBER%.zip CompactMeter.exe
-
+  - 7z a CompactMeter_%APPVEYOR_BUILD_NUMBER%.zip CompactMeter.exe README.md
