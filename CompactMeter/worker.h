@@ -42,6 +42,8 @@ private:
 	HANDLE myMutex;  // 排他制御
 
 	DWORD WINAPI ExecThread();
+	void CollectCpuUsage(const int &nProcessors, std::vector<PDH_HQUERY> &hQuery, std::vector<PDH_HQUERY> &hCounter, PDH_FMT_COUNTERVALUE &fntValue);
+	boolean InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProcessors, std::vector<PDH_HQUERY> &hCounter);
 	void CollectTraffic();
 };
 

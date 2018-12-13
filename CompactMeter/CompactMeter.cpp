@@ -60,7 +60,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	Logger::Setup();
 
 	g_pMyInifile = new MyInifileUtil();
-	g_pMyInifile->load();
+	g_pMyInifile->Load();
 
     // アプリケーション初期化の実行:
     if (!InitInstance(hInstance, nCmdShow))
@@ -266,7 +266,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			g_pMyInifile->mWindowWidth = rectWindow.right;
 			g_pMyInifile->mWindowHeight = rectWindow.bottom;
-			g_pMyInifile->save();
+			g_pMyInifile->Save();
 
 			// オフスクリーン再生成
 			if (g_offScreenBitmap != NULL) {
@@ -288,7 +288,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			int y = HIWORD(lParam);
 			g_pMyInifile->mPosX = x;
 			g_pMyInifile->mPosY = y;
-			g_pMyInifile->save();
+			g_pMyInifile->Save();
 		}
 		return 0;
 
@@ -469,7 +469,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 	//--------------------------------------------------
 	// デバッグ表示
 	//--------------------------------------------------
-	Font fontTahoma(L"Tahoma", 16);
+	Font fontTahoma(L"Tahoma", 12);
 	StringFormat format;
 	format.SetAlignment(StringAlignmentNear);
 

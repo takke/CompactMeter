@@ -26,7 +26,7 @@ DWORD WINAPI CWorker::ThreadFunc(LPVOID lpParameter)
 	return ((CWorker*)lpParameter)->ExecThread();
 }
 
-#define TARGET_FPS 50
+#define TARGET_FPS 30
 
 DWORD WINAPI CWorker::ExecThread()
 {
@@ -43,26 +43,9 @@ DWORD WINAPI CWorker::ExecThread()
 	std::vector<PDH_HQUERY>   hQuery;
 	std::vector<PDH_HCOUNTER> hCounter;
 	PDH_FMT_COUNTERVALUE      fntValue;
-
-	hQuery.resize(nProcessors + 1);
-	hCounter.resize(nProcessors + 1);
-
-	// 各コア
-	for (int i = 0; i < nProcessors + 1; i++) {
-		if (PdhOpenQuery(NULL, 0, &hQuery[i]) != ERROR_SUCCESS) {
-			Logger::d(L"クエリーをオープンできません。%d", i);
-			return S_OK;
-		}
-	}
-
-	// ALL
-	PdhAddCounter(hQuery[0], L"\\Processor(_Total)\\% Processor Time", 0, &hCounter[0]);
-	PdhCollectQueryData(hQuery[0]);
-	for (int i = 0; i < nProcessors; i++) {
-		CString query;
-		query.Format(L"\\Processor(%d)\\%% Processor Time", i);
-		PdhAddCounter(hQuery[i+1], (LPCWSTR)query, 0, &hCounter[i+1]);
-		PdhCollectQueryData(hQuery[i+1]);
+	if( !InitProcessors(hQuery, nProcessors, hCounter) ) {
+		// 初期化失敗
+		return S_OK;
 	}
 
 	while (true) {
@@ -75,16 +58,7 @@ DWORD WINAPI CWorker::ExecThread()
 			CollectTraffic();
 
 			// CPU 使用率計測
-			CpuUsage usage;
-			for (int i = 0; i < nProcessors + 1; i++) {
-				PdhCollectQueryData(hQuery[i]);
-				PdhGetFormattedCounterValue(hCounter[i], PDH_FMT_LONG, NULL, &fntValue);
-				usage.usages.push_back((float)fntValue.longValue);
-			}
-			cpuUsages.push_back(usage);
-			if (cpuUsages.size() > TARGET_FPS) {
-				cpuUsages.erase(cpuUsages.begin());
-			}
+			CollectCpuUsage(nProcessors, hQuery, hCounter, fntValue);
 
 			criticalSection.Unlock();
 
@@ -111,6 +85,46 @@ DWORD WINAPI CWorker::ExecThread()
 	}
 
 	return S_OK;
+}
+
+void CWorker::CollectCpuUsage(const int &nProcessors, std::vector<PDH_HQUERY> &hQuery, std::vector<PDH_HQUERY> &hCounter, PDH_FMT_COUNTERVALUE &fntValue)
+{
+	CpuUsage usage;
+	for (int i = 0; i < nProcessors + 1; i++) {
+		PdhCollectQueryData(hQuery[i]);
+		PdhGetFormattedCounterValue(hCounter[i], PDH_FMT_LONG, NULL, &fntValue);
+		usage.usages.push_back((float)fntValue.longValue);
+	}
+	cpuUsages.push_back(usage);
+	if (cpuUsages.size() > TARGET_FPS) {
+		cpuUsages.erase(cpuUsages.begin());
+	}
+}
+
+boolean CWorker::InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProcessors, std::vector<PDH_HQUERY> &hCounter)
+{
+	hQuery.resize(nProcessors + 1);
+	hCounter.resize(nProcessors + 1);
+
+	// 各コア
+	for (int i = 0; i < nProcessors + 1; i++) {
+		if (PdhOpenQuery(NULL, 0, &hQuery[i]) != ERROR_SUCCESS) {
+			Logger::d(L"クエリーをオープンできません。%d", i);
+			return false;
+		}
+	}
+
+	// ALL
+	PdhAddCounter(hQuery[0], L"\\Processor(_Total)\\% Processor Time", 0, &hCounter[0]);
+	PdhCollectQueryData(hQuery[0]);
+	for (int i = 0; i < nProcessors; i++) {
+		CString query;
+		query.Format(L"\\Processor(%d)\\%% Processor Time", i);
+		PdhAddCounter(hQuery[i + 1], (LPCWSTR)query, 0, &hCounter[i + 1]);
+		PdhCollectQueryData(hQuery[i + 1]);
+	}
+
+	return true;
 }
 
 void CWorker::CollectTraffic()
@@ -156,7 +170,6 @@ void CWorker::CollectTraffic()
 	if (traffics.size() > TARGET_FPS) {
 		traffics.erase(traffics.begin());
 	}
-
 
 }
 
