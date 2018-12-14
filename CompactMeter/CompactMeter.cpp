@@ -139,6 +139,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
+	if (g_pMyInifile->mAlwaysOnTop) {
+		SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+
 	return TRUE;
 }
 
@@ -231,6 +235,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// Toggle Debug Mode
 			g_pMyInifile->mDebugMode = !g_pMyInifile->mDebugMode;
 			g_pMyInifile->Save();
+			return 0L;
+
+		case 'T':
+			// Toggle AlwaysOnTop
+			g_pMyInifile->mAlwaysOnTop = !g_pMyInifile->mAlwaysOnTop;
+			g_pMyInifile->Save();
+			SetWindowPos(hWnd, g_pMyInifile->mAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			return 0L;
 		}
 		break;

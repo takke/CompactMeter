@@ -26,6 +26,7 @@ void MyInifileUtil::Load()
 	mPosY = GetPrivateProfileInt(szAppName, L"PosY", 0, mInifilePath);
 
 	mDebugMode = GetPrivateProfileInt(szAppName, L"DebugMode", 0, mInifilePath) != 0;
+	mAlwaysOnTop = GetPrivateProfileInt(szAppName, L"AlwaysOnTop", 1, mInifilePath) != 0;
 
 	Logger::d(L"ini file loaded");
 }
@@ -38,6 +39,7 @@ void MyInifileUtil::Save()
 	WriteIntEntry(L"PosX", mPosX);
 	WriteIntEntry(L"PosY", mPosY);
 	WriteIntEntry(L"DebugMode", mDebugMode ? 1 : 0);
+	WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);
 }
 
 

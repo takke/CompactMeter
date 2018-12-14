@@ -8,6 +8,7 @@ public:
 	int mPosX = 0;
 	int mPosY = 0;
 	boolean mDebugMode = false;
+	boolean mAlwaysOnTop = true;
 
 	const wchar_t* szAppName = L"CompactMeter";
 
