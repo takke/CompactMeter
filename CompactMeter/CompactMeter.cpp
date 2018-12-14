@@ -41,7 +41,7 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 void                DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap);
 void				DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color);
+void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color, int scale);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -226,6 +226,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case VK_F12:
 			PostMessage(hWnd, WM_CLOSE, 0, 0);
 			return 0L;
+
+		case 'D':
+			// Toggle Debug Mode
+			g_pMyInifile->mDebugMode = !g_pMyInifile->mDebugMode;
+			g_pMyInifile->Save();
+			return 0L;
 		}
 		break;
 
@@ -359,16 +365,11 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 {
 	Gdiplus::RectF rect;
 
-	float xbase = 10.0f;
-	float ybase = 30.0f;
-	float padding = 10.0f;	// メーター間の差分
-
-
 	CString str;
 	RECT rectWindow;
 	GetClientRect(hWnd, &rectWindow);
 	// 各ウィジェットのサイズ(width, height)
-	float size = rectWindow.right / 2 - xbase * 2 - padding;
+	float size = rectWindow.right / 2.0f;
 
 
 	const Traffic& t = pWorker->traffics[pWorker->traffics.size() - 1];	// 一番新しいもの
@@ -389,38 +390,50 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 	CpuUsage cpuUsage;
 	int nCore = pWorker->GetCpuUsage(&cpuUsage);
 
-	float y = ybase;
+	float y = 0;
 	float height = size;
 
 	// 全コアの合計
 	{
-		rect = Gdiplus::RectF(xbase, ybase, size, size);
+		rect = Gdiplus::RectF(size/2, 0, size, size);
 		float percent = cpuUsage.usages[0];
 		str.Format(L"CPU (%.0f%%)", percent);
-		DrawMeter(g, rect, percent, str, colorCpu);
+		DrawMeter(g, rect, percent, str, colorCpu, 1);
 	}
 
-	// 各CPU
+	// 各Core
+	int div = 4;
+	int scale = div / 2;	// 1 or 2
+	float coreSize = size / scale;
+	float x = 0;
 	for (int i = 0; i < nCore; i++) {
-		if (i % 2 == 0) {
+		if (i % div == 0) {
 			// 左側
-			y += height * 1;
-			if (y + size >= screenHeight) {
+			x = 0;
+			if (i == 0) {
+				y += height;
+			}
+			else {
+				y += coreSize;
+			}
+			if (y + coreSize >= screenHeight) {
 				return;
 			}
 
-			rect = Gdiplus::RectF(xbase, y, size, size);
+			rect = Gdiplus::RectF(x, y, coreSize, coreSize);
 		}
 		else {
 			// 右側
-			rect = Gdiplus::RectF(xbase + size + padding, y, size, size);
+			x += coreSize;
+			rect = Gdiplus::RectF(x, y, coreSize, coreSize);
 		}
 		float percent = cpuUsage.usages[i + 1];
-		str.Format(L"Core%d (%.0f%%)", i + 1, percent);
-		DrawMeter(g, rect, percent, str, colorCpu);
+//		str.Format(L"Core%d (%.0f%%)", i + 1, percent);
+		str.Format(L"Core%d", i + 1);
+		DrawMeter(g, rect, percent, str, colorCpu, scale);
 	}
-	y += height * 1;
-	if (y + size >= screenHeight) {
+	y += coreSize;
+	if (y + coreSize >= screenHeight) {
 		return;
 	}
 
@@ -435,13 +448,13 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 	float percent = 0.0f;
 
 	// Up(byte単位)
-	//rect = Gdiplus::RectF(xbase, ybase, 200.0f, 200.0f);
+	//rect = Gdiplus::RectF(0, 0, 200.0f, 200.0f);
 	//percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
 	//str.Format(L"▲ %.0f[b/s], %.0f%%", outb, percent);
 	//DrawMeter(g, rect, percent, str, colorNet);
 
 	// Down(byte単位)
-	//rect = Gdiplus::RectF(xbase + 250.0f, ybase, 200.0f, 200.0f);
+	//rect = Gdiplus::RectF(0 + 250.0f, 0, 200.0f, 200.0f);
 	//percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
 	//str.Format(L"▼ %.0f[b/s], %.0f%%", inb, percent);
 	//DrawMeter(g, rect, percent, str, colorNet);
@@ -452,18 +465,18 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 	outb /= 1024;
 
 	// Up(kB単位)
-	rect = Gdiplus::RectF(xbase, y, size, size);
+	rect = Gdiplus::RectF(0, y, size, size);
 	percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
 	percent = percent < 0.0f ? 0.0f : percent;
 	str.Format(L"▲ %.1f KB/s", outb);
-	DrawMeter(g, rect, percent, str, colorNet);
+	DrawMeter(g, rect, percent, str, colorNet, 1);
 
 	// Down(kB単位)
-	rect = Gdiplus::RectF(xbase + size + padding, y, size, size);
+	rect = Gdiplus::RectF(size, y, size, size);
 	percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
 	percent = percent < 0.0f ? 0.0f : percent;
 	str.Format(L"▼ %.1f KB/s", inb);
-	DrawMeter(g, rect, percent, str, colorNet);
+	DrawMeter(g, rect, percent, str, colorNet, 1);
 	y += height * 1;
 
 	//--------------------------------------------------
@@ -474,7 +487,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 	format.SetAlignment(StringAlignmentNear);
 
 	// 開始 Y 座標
-	rect = Gdiplus::RectF(xbase, y, screenWidth, screenHeight-y);
+	rect = Gdiplus::RectF(0, y, screenWidth, screenHeight-y);
 
 	//str.Format(L"Up=%lld(%lld), Down=%lld(%lld)",
 	//	t.out, t.out - t0.out,
@@ -500,12 +513,14 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 	static int iCalled = 0;
 	iCalled++;
 
-	str.Format(L"i=%d, n=%d size=%dx%d %s %.0f", iCalled, pWorker->traffics.size(), rectWindow.right, rectWindow.bottom, (LPCTSTR)strDateTime, size);
-	g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
+	if (g_pMyInifile->mDebugMode) {
+		str.Format(L"i=%d, n=%d size=%dx%d %s %.0f", iCalled, pWorker->traffics.size(), rectWindow.right, rectWindow.bottom, (LPCTSTR)strDateTime, size);
+		g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
+	}
 
 }
 
-void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color)
+void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color, int scale)
 {
 	if (percent >= 90.0) {
 		color = Color(255, 64, 64);
@@ -515,9 +530,36 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
 		color = Color(192, 192, 64);
 	}
 
+	//--------------------------------------------------
+	// 枠線(デバッグのみ)
+	//--------------------------------------------------
+	if (g_pMyInifile->mDebugMode) {
+
+		Pen pen1(Color(64, 64, 64), 1);
+		g.DrawRectangle(&pen1, rect);
+	}
+
+	float margin = 5 / (float)scale;
+	rect.Offset(margin, margin);
+	rect.Width -= margin*2;
+	rect.Height -= margin*2;
+
 	// ペン
 	Pen p(color, 1);
 	SolidBrush mainBrush(color);
+
+	//--------------------------------------------------
+	// ラベル
+	//--------------------------------------------------
+	Font fontTahoma(L"Tahoma", scale == 1 ? 11.0f : 9.0f);
+	StringFormat format;
+	format.SetAlignment(StringAlignmentNear);
+	g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
+	rect.Offset(0, 30 / (float)scale);
+
+	//--------------------------------------------------
+	// メーター描画
+	//--------------------------------------------------
 
 	// アンチエイリアス
 //	g.SetSmoothingMode(SmoothingModeNone);
@@ -551,11 +593,4 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
 	float x = center.X - length * cosf(rad);
 	float y = center.Y - length * sinf(rad);
 	g.DrawLine(&p, center.X, center.Y, x, y);
-
-	// ラベル
-	Font fontTahoma(L"Tahoma", 11);
-	StringFormat format;
-	format.SetAlignment(StringAlignmentNear);
-	rect.Offset(0, -20);
-	g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
 }

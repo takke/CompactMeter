@@ -7,6 +7,7 @@ public:
 	int mWindowHeight = 0;
 	int mPosX = 0;
 	int mPosY = 0;
+	boolean mDebugMode = false;
 
 	const wchar_t* szAppName = L"CompactMeter";
 
