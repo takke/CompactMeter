@@ -38,6 +38,8 @@ MyInifileUtil* g_pMyInifile = NULL;
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void				ToggleDebugMode();
+void				ToggleAlwaysOnTop(const HWND &hWnd);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 void                DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap);
 void				DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
@@ -164,26 +166,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
 	case WM_CREATE:
-	{
-		// 初期化
-		GdiplusStartup(&gdiToken, &gdiSI, NULL);
+		{
+			// 初期化
+			GdiplusStartup(&gdiToken, &gdiSI, NULL);
 
-		// OffScreen
-		g_offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
-		g_offScreen = new Graphics(g_offScreenBitmap);
+			// OffScreen
+			g_offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
+			g_offScreen = new Graphics(g_offScreenBitmap);
 
-		// スレッド準備
-		pMyWorker = new CWorker();
-		pMyWorker->SetParams(hWnd);
+			// スレッド準備
+			pMyWorker = new CWorker();
+			pMyWorker->SetParams(hWnd);
 
-		// スレッドの作成 
-		HANDLE hThread = CreateThread(NULL, 0,
-			CWorker::ThreadFunc, (LPVOID)pMyWorker,
-			CREATE_SUSPENDED, &threadId);
+			// スレッドの作成 
+			HANDLE hThread = CreateThread(NULL, 0,
+				CWorker::ThreadFunc, (LPVOID)pMyWorker,
+				CREATE_SUSPENDED, &threadId);
 
-		// スレッドの起動
-		ResumeThread(hThread);
-	}
+			// スレッドの起動
+			ResumeThread(hThread);
+		}
 		break;
 
     case WM_COMMAND:
@@ -198,6 +200,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+			case ID_POPUPMENU_ALWAYSONTOP:
+				ToggleAlwaysOnTop(hWnd);
+				return 0L;
+			case ID_POPUPMENU_DEBUGMODE:
+				ToggleDebugMode();
+				return 0L;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -233,15 +241,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case 'D':
 			// Toggle Debug Mode
-			g_pMyInifile->mDebugMode = !g_pMyInifile->mDebugMode;
-			g_pMyInifile->Save();
+			ToggleDebugMode();
 			return 0L;
 
 		case 'T':
 			// Toggle AlwaysOnTop
-			g_pMyInifile->mAlwaysOnTop = !g_pMyInifile->mAlwaysOnTop;
-			g_pMyInifile->Save();
-			SetWindowPos(hWnd, g_pMyInifile->mAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			ToggleAlwaysOnTop(hWnd);
 			return 0L;
 		}
 		break;
@@ -264,6 +269,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		g_dragging = false;
 		return 0;
+
+	case WM_RBUTTONUP:
+		{
+			// 右クリックメニュー表示
+			POINT po;
+			po.x = LOWORD(lParam);
+			po.y = HIWORD(lParam);
+		
+			static HMENU hMenu;
+			static HMENU hSubMenu;
+
+			hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDR_MENU1));
+			hSubMenu = GetSubMenu(hMenu, 0);
+
+			ClientToScreen(hWnd, &po);
+
+			// 初期チェック状態を反映
+			CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pMyInifile->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
+			CheckMenuItem(hSubMenu, ID_POPUPMENU_DEBUGMODE, MF_BYCOMMAND | (g_pMyInifile->mDebugMode ? MFS_CHECKED : MFS_UNCHECKED));
+
+			TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, po.x, po.y, 0, hWnd, NULL);
+
+			return 0;
+		}
 
 	case WM_SIZE:
 		{
@@ -320,6 +349,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void ToggleDebugMode()
+{
+	g_pMyInifile->mDebugMode = !g_pMyInifile->mDebugMode;
+	g_pMyInifile->Save();
+}
+
+void ToggleAlwaysOnTop(const HWND &hWnd)
+{
+	g_pMyInifile->mAlwaysOnTop = !g_pMyInifile->mAlwaysOnTop;
+	g_pMyInifile->Save();
+	SetWindowPos(hWnd, g_pMyInifile->mAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 // バージョン情報ボックスのメッセージ ハンドラーです。
