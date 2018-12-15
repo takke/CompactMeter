@@ -12,7 +12,7 @@
 #define IDI_SMALL                       108
 #define IDC_COMPACTMETER                109
 #define IDR_MAINFRAME                   128
-#define IDR_MENU1                       129
+#define IDR_POPUP_MENU                  129
 #define ID_POPUPMENU_ALWAYSONTOP        32775
 #define ID_POPUPMENU_DEBUGMODE          32776
 #define IDC_STATIC                      -1

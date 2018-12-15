@@ -280,7 +280,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			static HMENU hMenu;
 			static HMENU hSubMenu;
 
-			hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDR_MENU1));
+			hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDR_POPUP_MENU));
 			hSubMenu = GetSubMenu(hMenu, 0);
 
 			ClientToScreen(hWnd, &po);
