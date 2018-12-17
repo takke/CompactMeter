@@ -458,7 +458,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
 
 	//--------------------------------------------------
-	// CPU タコメーター描画
+	// CPU+Memory タコメーター描画
 	//--------------------------------------------------
 	Color colorCpu(255, 192, 192, 192);
 
@@ -470,13 +470,36 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
 	// 全コアの合計
 	{
-		rect = Gdiplus::RectF(size/2, 0, size, size);
+		rect = Gdiplus::RectF(0, 0, size, size);
 		float percent = cpuUsage.usages[0];
 		str.Format(L"CPU (%.0f%%)", percent);
 		DrawMeter(g, rect, percent, str, colorCpu, 1);
 	}
 
+	// メモリ使用量
+	{
+		MEMORYSTATUSEX ms;
+
+		ms.dwLength = sizeof(ms);
+		GlobalMemoryStatusEx(&ms);
+
+		//printf("dwMemoryLoad     %d\n", ms.dwMemoryLoad);
+		//printf("ullTotalPhys     %I64d\n", ms.ullTotalPhys);         // 物理メモリの搭載容量
+		//printf("ullAvailPhys     %I64d\n", ms.ullAvailPhys);         // 物理メモリの空き容量
+		//printf("ullTotalPageFile %I64d\n", ms.ullTotalPageFile);     // ページングの搭載容量
+		//printf("ullAvailPageFile %I64d\n", ms.ullAvailPageFile);     // ページングの空き容量
+		//printf("ullTotalVirtual  %I64d\n", ms.ullTotalVirtual);      // 仮想メモリの搭載容量
+		//printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
+
+		rect = Gdiplus::RectF(size, 0, size, size);
+		float percent = (ms.ullTotalPhys - ms.ullAvailPhys) * 100.0f / ms.ullTotalPhys;
+		str.Format(L"Memory (%.0f%%)", percent);
+		DrawMeter(g, rect, percent, str, colorCpu, 1);
+	}
+
+	//--------------------------------------------------
 	// 各Core
+	//--------------------------------------------------
 	int div = 4;
 	int scale = div / 2;	// 1 or 2
 	float coreSize = size / scale;
