@@ -15,6 +15,7 @@ Windows用のCPU使用率やネット通信量をメーター表示するウィ�
 | Bキー | 枠線表示の切替 |
 
 
-## スナップショット
+## ダウンロード
 
-[AppVeyorのartifacts](https://ci.appveyor.com/project/takke/compactmeter/build/artifacts) から最新版を取得できます。
+- まだ正式リリースはしていません。するかどうかも未定です。
+- [AppVeyorのartifacts](https://ci.appveyor.com/project/takke/compactmeter/build/artifacts) から最新版(スナップショット)をダウンロードできます。
