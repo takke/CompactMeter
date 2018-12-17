@@ -13,8 +13,13 @@
 #include <iphlpapi.h>
 #pragma comment(lib, "iphlpapi.lib")
 
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 // Windows ヘッダー ファイル
 #include <windows.h>
+#include <commctrl.h>
 
 #include <Gdiplus.h>
 #pragma comment(lib, "Gdiplus.lib")
