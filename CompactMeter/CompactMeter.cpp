@@ -26,10 +26,10 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ ク
 Bitmap* g_offScreenBitmap = NULL;
 Graphics* g_offScreen = NULL;
 
+MyInifileUtil* g_pMyInifile = NULL;
 
 // ドラッグ中
 boolean g_dragging = false;
-MyInifileUtil* g_pMyInifile = NULL;
 
 
 //--------------------------------------------------
@@ -38,6 +38,7 @@ MyInifileUtil* g_pMyInifile = NULL;
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void				ToggleBorder();
 void				ToggleDebugMode();
 void				ToggleAlwaysOnTop(const HWND &hWnd);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
@@ -206,6 +207,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case ID_POPUPMENU_DEBUGMODE:
 				ToggleDebugMode();
 				return 0L;
+			case ID_POPUPMENU_DRAW_BORDER:
+				ToggleBorder();
+				return 0L;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -237,6 +241,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case VK_ESCAPE:
 		case VK_F12:
 			PostMessage(hWnd, WM_CLOSE, 0, 0);
+			return 0L;
+		}
+		break;
+
+	case WM_KEYDOWN:
+		switch (wParam) {
+		case 'B':
+			// Toggle Border
+			ToggleBorder();
 			return 0L;
 
 		case 'D':
@@ -288,8 +301,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// 初期チェック状態を反映
 			CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pMyInifile->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
 			CheckMenuItem(hSubMenu, ID_POPUPMENU_DEBUGMODE, MF_BYCOMMAND | (g_pMyInifile->mDebugMode ? MFS_CHECKED : MFS_UNCHECKED));
+			CheckMenuItem(hSubMenu, ID_POPUPMENU_DRAW_BORDER, MF_BYCOMMAND | (g_pMyInifile->mDrawBorder ? MFS_CHECKED : MFS_UNCHECKED));
 
+			Logger::d(L"Show Popup menu");
 			TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, po.x, po.y, 0, hWnd, NULL);
+			Logger::d(L"Close Popup menu");
 
 			return 0;
 		}
@@ -349,6 +365,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void ToggleBorder()
+{
+	g_pMyInifile->mDrawBorder = !g_pMyInifile->mDrawBorder;
+	g_pMyInifile->Save();
 }
 
 void ToggleDebugMode()
@@ -586,7 +608,7 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
 	//--------------------------------------------------
 	// 枠線(デバッグのみ)
 	//--------------------------------------------------
-	if (g_pMyInifile->mDebugMode) {
+	if (g_pMyInifile->mDrawBorder) {
 
 		Pen pen1(Color(64, 64, 64), 1);
 		g.DrawRectangle(&pen1, rect);

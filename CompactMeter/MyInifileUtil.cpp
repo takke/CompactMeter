@@ -19,16 +19,28 @@ MyInifileUtil::~MyInifileUtil()
 void MyInifileUtil::Load()
 {
 	// 画面サイズのデフォルト値
-	mWindowWidth = GetPrivateProfileInt(szAppName, L"WindowWidth", 300, mInifilePath);
-	mWindowHeight = GetPrivateProfileInt(szAppName, L"WindowHeight", 600, mInifilePath);
+	mWindowWidth = ReadIntEntry(L"WindowWidth", 300);
+	mWindowHeight = ReadIntEntry(L"WindowHeight", 600);
 
-	mPosX = GetPrivateProfileInt(szAppName, L"PosX", 0, mInifilePath);
-	mPosY = GetPrivateProfileInt(szAppName, L"PosY", 0, mInifilePath);
+	mPosX = ReadIntEntry(L"PosX", 0);
+	mPosY = ReadIntEntry(L"PosY", 0);
 
-	mDebugMode = GetPrivateProfileInt(szAppName, L"DebugMode", 0, mInifilePath) != 0;
-	mAlwaysOnTop = GetPrivateProfileInt(szAppName, L"AlwaysOnTop", 1, mInifilePath) != 0;
+	mDebugMode = ReadBooleanEntry(L"DebugMode", false);
+	mAlwaysOnTop = ReadBooleanEntry(L"AlwaysOnTop", true);
+	mDrawBorder = ReadBooleanEntry(L"DrawBorder", true);
 
 	Logger::d(L"ini file loaded");
+}
+
+int MyInifileUtil::ReadIntEntry(LPCTSTR key, int defaultValue)
+{
+	return GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
+}
+
+
+boolean MyInifileUtil::ReadBooleanEntry(LPCTSTR key, boolean defaultValue)
+{
+	return ReadIntEntry(key, defaultValue ? 1 : 0) != 0;
 }
 
 
@@ -40,6 +52,7 @@ void MyInifileUtil::Save()
 	WriteIntEntry(L"PosY", mPosY);
 	WriteIntEntry(L"DebugMode", mDebugMode ? 1 : 0);
 	WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);
+	WriteIntEntry(L"DrawBorder", mDrawBorder ? 1 : 0);
 }
 
 
