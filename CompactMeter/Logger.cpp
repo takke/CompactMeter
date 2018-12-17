@@ -36,9 +36,13 @@ void Logger::d(LPCWSTR format, ...)
 
 
 	// "2018-12-12 06:39:14.147 hoge\n"
-	fwprintf(fp, L"%d-%02d-%02d %02d:%02d:%02d.%03d %s\n",
+	CString value;
+	value.Format(L"%d-%02d-%02d %02d:%02d:%02d.%03d %s\n",
 		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
 		(LPCWSTR)s);
+
+	fwprintf(fp, L"%s", (LPCWSTR)value);
+//	wprintf(L"%s", (LPCWSTR)value);
 
 	fflush(fp);
 }
