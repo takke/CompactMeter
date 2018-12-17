@@ -492,8 +492,9 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 		//printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
 
 		rect = Gdiplus::RectF(size, 0, size, size);
-		float percent = (ms.ullTotalPhys - ms.ullAvailPhys) * 100.0f / ms.ullTotalPhys;
-		str.Format(L"Memory (%.0f%%)", percent);
+		DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
+		float percent = ullUsing * 100.0f / ms.ullTotalPhys;
+		str.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", percent, ullUsing/1024/1024, ms.ullTotalPhys/1024/1024);
 		DrawMeter(g, rect, percent, str, colorCpu, 1);
 	}
 
@@ -653,7 +654,7 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
 	StringFormat format;
 	format.SetAlignment(StringAlignmentNear);
 	g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
-	rect.Offset(0, 30 / (float)scale);
+	rect.Offset(0, 35 / (float)scale);
 
 	//--------------------------------------------------
 	// メーター描画
