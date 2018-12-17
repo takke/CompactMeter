@@ -42,7 +42,11 @@ void Logger::d(LPCWSTR format, ...)
 		(LPCWSTR)s);
 
 	fwprintf(fp, L"%s", (LPCWSTR)value);
-//	wprintf(L"%s", (LPCWSTR)value);
+
+#ifdef _DEBUG_CONSOLE
+	CStringA ansi(value);
+	printf("%s", (LPCSTR)ansi);
+#endif
 
 	fflush(fp);
 }
