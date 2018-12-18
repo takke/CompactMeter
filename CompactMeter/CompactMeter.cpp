@@ -20,7 +20,7 @@ using namespace Gdiplus;
 DWORD threadId = 0;    // スレッド ID 
 CWorker* pMyWorker = NULL;
 
-HINSTANCE hInst;                                // 現在のインスタンス
+HINSTANCE g_hInst;                                // 現在のインスタンス
 WCHAR szTitle[MAX_LOADSTRING];                  // タイトル バーのテキスト
 WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ クラス名
 
@@ -55,7 +55,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // グローバル文字列を初期化する
+    // グローバル文字列を初期化
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_COMPACTMETER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
@@ -65,7 +65,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     g_pMyInifile = new MyInifileUtil();
     g_pMyInifile->Load();
 
-    // アプリケーション初期化の実行:
+    // アプリケーション初期化
     if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
@@ -90,11 +90,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     return (int) msg.wParam;
 }
 
-//
-//  関数: MyRegisterClass()
-//
-//  目的: ウィンドウ クラスを登録します。
-//
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
@@ -116,19 +111,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     return RegisterClassExW(&wcex);
 }
 
-//
-//   関数: InitInstance(HINSTANCE, int)
-//
-//   目的: インスタンス ハンドルを保存して、メイン ウィンドウを作成します
-//
-//   コメント:
-//
-//        この関数で、グローバル変数でインスタンス ハンドルを保存し、
-//        メイン プログラム ウィンドウを作成および表示します。
-//
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-    hInst = hInstance; // グローバル変数にインスタンス ハンドルを格納する
+    g_hInst = hInstance;
 
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, 
                     WS_POPUP,
@@ -149,16 +134,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     return TRUE;
 }
 
-//
-//  関数: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  目的: メイン ウィンドウのメッセージを処理します。
-//
-//  WM_COMMAND  - アプリケーション メニューの処理
-//  WM_PAINT    - メイン ウィンドウを描画する
-//  WM_DESTROY  - 中止メッセージを表示して戻る
-//
-//
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     GdiplusStartupInput gdiSI;
@@ -196,7 +171,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             switch (wmId)
             {
             case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
@@ -293,7 +268,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             static HMENU hMenu;
             static HMENU hSubMenu;
 
-            hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDR_POPUP_MENU));
+            hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_POPUP_MENU));
             hSubMenu = GetSubMenu(hMenu, 0);
 
             ClientToScreen(hWnd, &po);
