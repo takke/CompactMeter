@@ -2,6 +2,6 @@
 class MyUtil
 {
 public:
-	static CString GetModuleDirectoryPath();
+    static CString GetModuleDirectoryPath();
 };
 
