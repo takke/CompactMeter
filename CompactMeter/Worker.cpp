@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "worker.h"
+#include "Worker.h"
 #include "Logger.h"
 
 extern boolean g_dragging;
