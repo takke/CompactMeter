@@ -36,6 +36,10 @@ boolean g_dragging = false;
 //--------------------------------------------------
 // プロトタイプ宣言
 //--------------------------------------------------
+struct MeterColor {
+    float percent;
+    Color color;
+};
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -44,7 +48,8 @@ void                ToggleDebugMode();
 void                ToggleAlwaysOnTop(const HWND &hWnd);
 void                DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap);
 void                DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color, int scale);
+float               KbToPercent(float outb, const DWORD &maxTrafficBytes);
+void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], int scale);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -468,7 +473,12 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // CPU+Memory タコメーター描画
     //--------------------------------------------------
-    Color colorCpu(255, 192, 192, 192);
+    MeterColor cpuColors[] = {
+        { 90.0, Color(255, 64, 64) },
+        { 80.0, Color(255, 128, 64) },
+        { 70.0, Color(192, 192, 64) },
+        {  0.0, Color(192, 192, 192) }
+    };
 
     CpuUsage cpuUsage;
     int nCore = pWorker->GetCpuUsage(&cpuUsage);
@@ -481,7 +491,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         rect = Gdiplus::RectF(0, 0, size, size);
         float percent = cpuUsage.usages[0];
         str.Format(L"CPU (%.0f%%)", percent);
-        DrawMeter(g, rect, percent, str, colorCpu, 1);
+        DrawMeter(g, rect, percent, str, cpuColors, 1);
     }
 
     // メモリ使用量
@@ -503,7 +513,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
         float percent = ullUsing * 100.0f / ms.ullTotalPhys;
         str.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", percent, ullUsing/1024/1024, ms.ullTotalPhys/1024/1024);
-        DrawMeter(g, rect, percent, str, colorCpu, 1);
+        DrawMeter(g, rect, percent, str, cpuColors, 1);
     }
 
     //--------------------------------------------------
@@ -537,7 +547,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         float percent = cpuUsage.usages[i + 1];
 //      str.Format(L"Core%d (%.0f%%)", i + 1, percent);
         str.Format(L"Core%d", i + 1);
-        DrawMeter(g, rect, percent, str, colorCpu, scale);
+        DrawMeter(g, rect, percent, str, cpuColors, scale);
     }
     y += coreSize;
     if (y + coreSize >= screenHeight) {
@@ -548,43 +558,37 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // Network タコメーター描画
     //--------------------------------------------------
-    Color colorNet(255, 96, 192, 96);
-
-    DWORD MB = 1024 * 1024;
+    DWORD MB = 1000 * 1000;
     DWORD maxTrafficBytes = 100 * MB;
     float percent = 0.0f;
 
-    // Up(byte単位)
-    //rect = Gdiplus::RectF(0, 0, 200.0f, 200.0f);
-    //percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
-    //str.Format(L"▲ %.0f[b/s], %.0f%%", outb, percent);
-    //DrawMeter(g, rect, percent, str, colorNet);
+    MeterColor netColors[] = {
+        { KbToPercent(1000, maxTrafficBytes), Color(255,  64, 64) },
+        { KbToPercent( 100, maxTrafficBytes), Color(255, 128, 64) },
+        { KbToPercent(  10, maxTrafficBytes), Color(192, 192, 64) },
+        {                                0.0, Color( 96, 192, 96) }
+    };
 
-    // Down(byte単位)
-    //rect = Gdiplus::RectF(0 + 250.0f, 0, 200.0f, 200.0f);
-    //percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
-    //str.Format(L"▼ %.0f[b/s], %.0f%%", inb, percent);
-    //DrawMeter(g, rect, percent, str, colorNet);
+    // KB単位
+    maxTrafficBytes /= 1000;
+    inb /= 1000;
+    outb /= 1000;
 
-    // kB単位
-    maxTrafficBytes /= 1024;
-    inb /= 1024;
-    outb /= 1024;
-
-    // Up(kB単位)
+    // Up(KB単位)
     rect = Gdiplus::RectF(0, y, size, size);
-    percent = outb == 0 ? 0.0f : (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
+    percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficBytes);
     percent = percent < 0.0f ? 0.0f : percent;
     str.Format(L"▲ %.1f KB/s", outb);
-    DrawMeter(g, rect, percent, str, colorNet, 1);
+    DrawMeter(g, rect, percent, str, netColors, 1);
 
-    // Down(kB単位)
+    // Down(KB単位)
     rect = Gdiplus::RectF(size, y, size, size);
-    percent = inb == 0 ? 0.0f : (log10f((float)inb) / log10f((float)maxTrafficBytes))*100.0f;
+    percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficBytes);
     percent = percent < 0.0f ? 0.0f : percent;
     str.Format(L"▼ %.1f KB/s", inb);
-    DrawMeter(g, rect, percent, str, colorNet, 1);
+    DrawMeter(g, rect, percent, str, netColors, 1);
     y += height * 1;
+
 
     //--------------------------------------------------
     // デバッグ表示
@@ -627,14 +631,28 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
 }
 
-void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, Color color, int scale)
+float KbToPercent(float outb, const DWORD &maxTrafficBytes)
 {
-    if (percent >= 90.0) {
-        color = Color(255, 64, 64);
-    } else if (percent >= 80.0) {
-        color = Color(255, 128, 64);
-    } else if (percent >= 70.0) {
-        color = Color(192, 192, 64);
+    return (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
+}
+
+/**
+ * メーターを描画する
+ *
+ * colors の最後は必ず percent=0.0 にすること
+ */
+void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], int scale)
+{
+    Color color;
+    for (int i = 0; ; i++) {
+        if (percent >= colors[i].percent) {
+            color = Color(colors[i].color);
+            break;
+        }
+
+        if (colors[i].percent == 0.0f) {
+            break;
+        }
     }
 
     //--------------------------------------------------
