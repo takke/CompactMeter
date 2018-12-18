@@ -239,31 +239,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
-    case WM_LBUTTONDOWN:
-        ReleaseCapture();
-
-        g_dragging = true;
-        if (GetKeyState(VK_SHIFT) & 0x8000) {
-            // Shift+ドラッグでリサイズ(暫定)
-            Logger::d(L"resize start");
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0);
-            Logger::d(L"resize end");
-        }
-        else {
-            // ドラッグで移動
-            Logger::d(L"drag start");
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
-            Logger::d(L"drag end");
-        }
-        g_dragging = false;
-        return 0;
-
     case WM_RBUTTONUP:
         {
             // 右クリックメニュー表示
-            POINT po;
-            po.x = LOWORD(lParam);
-            po.y = HIWORD(lParam);
+            POINT pt;
+            pt.x = LOWORD(lParam);
+            pt.y = HIWORD(lParam);
         
             static HMENU hMenu;
             static HMENU hSubMenu;
@@ -271,7 +252,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_POPUP_MENU));
             hSubMenu = GetSubMenu(hMenu, 0);
 
-            ClientToScreen(hWnd, &po);
+            ClientToScreen(hWnd, &pt);
 
             // 初期チェック状態を反映
             CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pMyInifile->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
@@ -279,11 +260,83 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             CheckMenuItem(hSubMenu, ID_POPUPMENU_DRAW_BORDER, MF_BYCOMMAND | (g_pMyInifile->mDrawBorder ? MFS_CHECKED : MFS_UNCHECKED));
 
             Logger::d(L"Show Popup menu");
-            TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, po.x, po.y, 0, hWnd, NULL);
+            TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, NULL);
             Logger::d(L"Close Popup menu");
 
             return 0;
         }
+
+    case WM_MOUSEMOVE:
+        {
+            POINT pt;
+            pt.x = LOWORD(lParam);
+            pt.y = HIWORD(lParam);
+
+            RECT rt;
+            GetClientRect(hWnd, &rt);
+
+            const int BORDER_SIZE = 6;
+            const int width = rt.right;
+            const int height = rt.bottom;
+
+            // カーソル変更
+            if ((pt.x <= BORDER_SIZE) && (pt.y <= BORDER_SIZE) || (pt.x >= width - BORDER_SIZE) && (pt.y >= height - BORDER_SIZE))
+                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENWSE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+            else if ((pt.x <= BORDER_SIZE) && (pt.y >= height - BORDER_SIZE) || (pt.x >= width - BORDER_SIZE) && (pt.y <= BORDER_SIZE))
+                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENESW, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+            else if ((pt.x <= BORDER_SIZE) || (pt.x >= width - BORDER_SIZE))
+                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZEWE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+            else if ((pt.y <= BORDER_SIZE) || (pt.y >= height - BORDER_SIZE))
+                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENS, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+
+            // ドラッグ中は非クライアント領域を偽装する
+            if (wParam & MK_LBUTTON)
+            {
+                g_dragging = true;
+                if (pt.x <= BORDER_SIZE && pt.y <= BORDER_SIZE)
+                    // 左上
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPLEFT, MAKELPARAM(pt.x, pt.y));
+                else if (pt.x >= rt.right - BORDER_SIZE && pt.y >= rt.bottom - BORDER_SIZE)
+                    // 右下
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
+                else if (pt.x <= BORDER_SIZE && pt.y >= rt.bottom - BORDER_SIZE)
+                    // 左下
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMLEFT, MAKELPARAM(pt.x, pt.y));
+                else if (pt.x >= rt.right - BORDER_SIZE && pt.y <= BORDER_SIZE)
+                    // 右上
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPRIGHT, MAKELPARAM(pt.x, pt.y));
+                else if (pt.x <= BORDER_SIZE)
+                    // 左辺
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTLEFT, MAKELPARAM(pt.x, pt.y));
+                else if (pt.x >= rt.right - BORDER_SIZE)
+                    // 右辺
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTRIGHT, MAKELPARAM(pt.x, pt.y));
+                else if (pt.y <= BORDER_SIZE)
+                    // 上辺
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOP, MAKELPARAM(pt.x, pt.y));
+                else if (pt.y >= rt.bottom - BORDER_SIZE)
+                    // 下辺
+                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOM, MAKELPARAM(pt.x, pt.y));
+                else {
+                    // 外枠以外のドラッグで移動
+                    if (wParam & MK_SHIFT) {
+                        // Shift+ドラッグでリサイズ(暫定)
+                        Logger::d(L"resize start");
+                        SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
+                        Logger::d(L"resize end");
+                    }
+                    else {
+                        // ドラッグで移動
+                        Logger::d(L"drag start");
+                        SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(pt.x, pt.y));
+                        Logger::d(L"drag end");
+                    }
+                }
+                g_dragging = false;
+
+            }
+        }
+        return 0L;
 
     case WM_SIZE:
         {
@@ -320,7 +373,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_MOVE:
         {
-            // 移動 => INIにイチを保存
+            // 移動 => INIに位置を保存
             int x = LOWORD(lParam);
             int y = HIWORD(lParam);
             g_pMyInifile->mPosX = x;
