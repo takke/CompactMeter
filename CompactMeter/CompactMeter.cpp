@@ -32,6 +32,10 @@ MyInifileUtil* g_pMyInifile = NULL;
 // ドラッグ中
 boolean g_dragging = false;
 
+// タスクトレイ関連
+#define WM_NOTIFYTASKTRAYICON   (WM_USER+100)
+#define TRAYICON_ID             0
+
 
 //--------------------------------------------------
 // プロトタイプ宣言
@@ -48,6 +52,9 @@ struct MeterGuide {
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void                AddTaskTrayIcon(const HWND &hWnd);
+void                RemoveTaskTrayIcon(const HWND &hWnd);
+void                ShowPopupMenu(const HWND &hWnd, POINT &pt);
 void                ToggleBorder();
 void                ToggleDebugMode();
 void                ToggleAlwaysOnTop(const HWND &hWnd);
@@ -172,8 +179,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             // スレッドの起動
             ResumeThread(hThread);
+
+            // タスクトレイに常駐
+            AddTaskTrayIcon(hWnd);
         }
         break;
+
+    case WM_NOTIFYTASKTRAYICON:
+//        Logger::d(L"%d, %d", lParam, wParam);
+        switch (lParam) {
+        case WM_RBUTTONUP:
+            {
+                POINT pt;
+                GetCursorPos(&pt);
+                ShowPopupMenu(hWnd, pt);
+            }
+            break;
+        }
+        return 0L;
 
     case WM_COMMAND:
         {
@@ -219,6 +242,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         GdiplusShutdown(gdiToken);
 
+        RemoveTaskTrayIcon(hWnd);
+
         PostQuitMessage(0);
         break;
 
@@ -257,22 +282,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             pt.x = LOWORD(lParam);
             pt.y = HIWORD(lParam);
         
-            static HMENU hMenu;
-            static HMENU hSubMenu;
-
-            hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_POPUP_MENU));
-            hSubMenu = GetSubMenu(hMenu, 0);
-
             ClientToScreen(hWnd, &pt);
 
-            // 初期チェック状態を反映
-            CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pMyInifile->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
-            CheckMenuItem(hSubMenu, ID_POPUPMENU_DEBUGMODE, MF_BYCOMMAND | (g_pMyInifile->mDebugMode ? MFS_CHECKED : MFS_UNCHECKED));
-            CheckMenuItem(hSubMenu, ID_POPUPMENU_DRAW_BORDER, MF_BYCOMMAND | (g_pMyInifile->mDrawBorder ? MFS_CHECKED : MFS_UNCHECKED));
-
-            Logger::d(L"Show Popup menu");
-            TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, NULL);
-            Logger::d(L"Close Popup menu");
+            ShowPopupMenu(hWnd, pt);
 
             return 0;
         }
@@ -404,6 +416,52 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void AddTaskTrayIcon(const HWND &hWnd)
+{
+    NOTIFYICONDATA nid;
+
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hWnd;
+    nid.uID = TRAYICON_ID;
+    nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    nid.uCallbackMessage = WM_NOTIFYTASKTRAYICON;
+    nid.hIcon = LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_COMPACTMETER));
+    wcscpy_s(nid.szTip, L"CompactMeter");
+
+    Shell_NotifyIcon(NIM_ADD, &nid);
+}
+
+void RemoveTaskTrayIcon(const HWND &hWnd)
+{
+    NOTIFYICONDATA nid;
+
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hWnd;
+    nid.uID = TRAYICON_ID;
+    nid.uFlags = 0;
+    Shell_NotifyIcon(NIM_DELETE, &nid);
+}
+
+void ShowPopupMenu(const HWND &hWnd, POINT &pt)
+{
+    static HMENU hMenu;
+    static HMENU hSubMenu;
+
+    hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_POPUP_MENU));
+    hSubMenu = GetSubMenu(hMenu, 0);
+
+    // 初期チェック状態を反映
+    CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pMyInifile->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
+    CheckMenuItem(hSubMenu, ID_POPUPMENU_DEBUGMODE, MF_BYCOMMAND | (g_pMyInifile->mDebugMode ? MFS_CHECKED : MFS_UNCHECKED));
+    CheckMenuItem(hSubMenu, ID_POPUPMENU_DRAW_BORDER, MF_BYCOMMAND | (g_pMyInifile->mDrawBorder ? MFS_CHECKED : MFS_UNCHECKED));
+
+    SetForegroundWindow(hWnd);
+
+    Logger::d(L"Show Popup menu");
+    TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, NULL);
+    Logger::d(L"Close Popup menu");
 }
 
 void ToggleBorder()
