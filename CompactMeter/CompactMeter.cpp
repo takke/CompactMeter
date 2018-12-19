@@ -40,6 +40,11 @@ struct MeterColor {
     float percent;
     Color color;
 };
+struct MeterGuide {
+    float percent;
+    Color color;
+    LPCWSTR text;
+};
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -49,7 +54,8 @@ void                ToggleAlwaysOnTop(const HWND &hWnd);
 void                DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap);
 void                DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
 float               KbToPercent(float outb, const DWORD &maxTrafficBytes);
-void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], int scale);
+void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float scale);
+void                DrawLineByAngle(Graphics& g, Pen* p, Gdiplus::PointF& center, float angle, float length1, float length2);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -460,24 +466,27 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     float size = rectWindow.right / 2.0f;
 
 
-    const Traffic& t = pWorker->traffics[pWorker->traffics.size() - 1]; // 一番新しいもの
-    const Traffic& t0 = pWorker->traffics[0];   // 一番古いもの
-
-    DWORD duration = t.tick - t0.tick;
-
-    // duration が ms なので *1000 してから除算
-    float inb = (t.in - t0.in) * 1000.0f / duration;
-    float outb = (t.out - t0.out) * 1000.0f / duration;
-
-
     //--------------------------------------------------
     // CPU+Memory タコメーター描画
     //--------------------------------------------------
-    MeterColor cpuColors[] = {
+    static MeterColor cpuColors[] = {
         { 90.0, Color(255, 64, 64) },
         { 80.0, Color(255, 128, 64) },
         { 70.0, Color(192, 192, 64) },
         {  0.0, Color(192, 192, 192) }
+    };
+    static MeterGuide cpuGuides[] = {
+        { 100.0, Color(255,  64,  64), L"" },
+        {  90.0, Color(255,  64,  64), L"" },
+        {  80.0, Color(255,  64,  64), L"" },
+        {  70.0, Color(255,  64,  64), L"" },
+        {  60.0, Color(192, 192, 192), L"" },
+        {  50.0, Color(192, 192, 192), L"" },
+        {  40.0, Color(192, 192, 192), L"" },
+        {  30.0, Color(192, 192, 192), L"" },
+        {  20.0, Color(192, 192, 192), L"" },
+        {  10.0, Color(192, 192, 192), L"" },
+        {   0.0, Color(192, 192, 192), L"" },
     };
 
     CpuUsage cpuUsage;
@@ -491,7 +500,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         rect = Gdiplus::RectF(0, 0, size, size);
         float percent = cpuUsage.usages[0];
         str.Format(L"CPU (%.0f%%)", percent);
-        DrawMeter(g, rect, percent, str, cpuColors, 1);
+        DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, 1);
     }
 
     // メモリ使用量
@@ -513,15 +522,15 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
         float percent = ullUsing * 100.0f / ms.ullTotalPhys;
         str.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", percent, ullUsing/1024/1024, ms.ullTotalPhys/1024/1024);
-        DrawMeter(g, rect, percent, str, cpuColors, 1);
+        DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, 1);
     }
 
     //--------------------------------------------------
     // 各Core
     //--------------------------------------------------
     int div = 4;
-    int scale = div / 2;    // 1 or 2
-    float coreSize = size / scale;
+    float scale = 2.0f / div;    // 1.0 or 0.5
+    float coreSize = size * scale;
     float x = 0;
     for (int i = 0; i < nCore; i++) {
         if (i % div == 0) {
@@ -547,7 +556,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         float percent = cpuUsage.usages[i + 1];
 //      str.Format(L"Core%d (%.0f%%)", i + 1, percent);
         str.Format(L"Core%d", i + 1);
-        DrawMeter(g, rect, percent, str, cpuColors, scale);
+        DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, scale);
     }
     y += coreSize;
     if (y + coreSize >= screenHeight) {
@@ -562,31 +571,48 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     DWORD maxTrafficBytes = 100 * MB;
     float percent = 0.0f;
 
-    MeterColor netColors[] = {
-        { KbToPercent(1000, maxTrafficBytes), Color(255,  64, 64) },
-        { KbToPercent( 100, maxTrafficBytes), Color(255, 128, 64) },
-        { KbToPercent(  10, maxTrafficBytes), Color(192, 192, 64) },
-        {                                0.0, Color( 96, 192, 96) }
-    };
+    const Traffic& t = pWorker->traffics[pWorker->traffics.size() - 1]; // 一番新しいもの
+    const Traffic& t0 = pWorker->traffics[0];   // 一番古いもの
+
+    DWORD duration = t.tick - t0.tick;
+
+    // duration が ms なので *1000 してから除算
+    float inb = (t.in - t0.in) * 1000.0f / duration;
+    float outb = (t.out - t0.out) * 1000.0f / duration;
 
     // KB単位
     maxTrafficBytes /= 1000;
     inb /= 1000;
     outb /= 1000;
 
+    static MeterColor netColors[] = {
+        { KbToPercent(1000, maxTrafficBytes), Color(255,  64,  64) },
+        { KbToPercent( 100, maxTrafficBytes), Color(255, 128,  64) },
+        { KbToPercent(  10, maxTrafficBytes), Color(192, 192,  64) },
+        {                                0.0, Color(192, 192, 192) }
+    };
+    static MeterGuide netGuides[] = {
+        { KbToPercent(100000, maxTrafficBytes), Color(255,  64,  64), L"100M" },
+        { KbToPercent( 10000, maxTrafficBytes), Color(255,  64,  64), L"10M"  },
+        { KbToPercent(  1000, maxTrafficBytes), Color(255,  64,  64), L"1M"   },
+        { KbToPercent(   100, maxTrafficBytes), Color(255, 128,  64), L"100K" },
+        { KbToPercent(    10, maxTrafficBytes), Color(192, 192,  64), L"10K"  },
+        {                                  0.0, Color(192, 192, 192), L""     },
+    };
+
     // Up(KB単位)
     rect = Gdiplus::RectF(0, y, size, size);
     percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficBytes);
     percent = percent < 0.0f ? 0.0f : percent;
     str.Format(L"▲ %.1f KB/s", outb);
-    DrawMeter(g, rect, percent, str, netColors, 1);
+    DrawMeter(g, rect, percent, str, netColors, netGuides, 1);
 
     // Down(KB単位)
     rect = Gdiplus::RectF(size, y, size, size);
     percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficBytes);
     percent = percent < 0.0f ? 0.0f : percent;
     str.Format(L"▼ %.1f KB/s", inb);
-    DrawMeter(g, rect, percent, str, netColors, 1);
+    DrawMeter(g, rect, percent, str, netColors, netGuides, 1);
     y += height * 1;
 
 
@@ -631,7 +657,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
 }
 
-float KbToPercent(float outb, const DWORD &maxTrafficBytes)
+inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
 {
     return (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
 }
@@ -641,7 +667,7 @@ float KbToPercent(float outb, const DWORD &maxTrafficBytes)
  *
  * colors の最後は必ず percent=0.0 にすること
  */
-void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], int scale)
+void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float scale)
 {
     Color color;
     for (int i = 0; ; i++) {
@@ -656,7 +682,7 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
     }
 
     //--------------------------------------------------
-    // 枠線(デバッグのみ)
+    // 枠線
     //--------------------------------------------------
     if (g_pMyInifile->mDrawBorder) {
 
@@ -664,23 +690,23 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
         g.DrawRectangle(&pen1, rect);
     }
 
-    float margin = 5 / (float)scale;
+    float margin = 5 * (float)scale;
     rect.Offset(margin, margin);
     rect.Width -= margin*2;
     rect.Height -= margin*2;
 
     // ペン
-    Pen p(color, 1);
+    Pen p(color, 1.2f);
     SolidBrush mainBrush(color);
 
     //--------------------------------------------------
     // ラベル
     //--------------------------------------------------
-    Font fontTahoma(L"Tahoma", scale == 1 ? 11.0f : 9.0f);
+    Font fontTahoma(L"Tahoma", scale == 1.0f ? 11.0f : 9.0f);
     StringFormat format;
     format.SetAlignment(StringAlignmentNear);
     g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
-    rect.Offset(0, 35 / (float)scale);
+    rect.Offset(0, 35 * (float)scale);
 
     //--------------------------------------------------
     // メーター描画
@@ -697,25 +723,38 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
     // 外枠
     Gdiplus::PointF center(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
     g.DrawArc(&p, rect, -180+PMIN, PMAX-PMIN);
-//  g.DrawLine(&p, rect.X, center.Y, rect.GetRight(), center.Y);
 
     float length0 = rect.Width / 2;
 
     // 真ん中から左下へ。
-    float r1 = PI * PMIN / 180;
-    g.DrawLine(&p, center.X, center.Y, center.X - length0 * cosf(r1), center.Y - length0 * sinf(r1));
+    DrawLineByAngle(g, &p, center, PMIN, 0, length0);
 
     // 真ん中から右下へ。
-    float r2 = PI * PMAX / 180;
-    g.DrawLine(&p, center.X, center.Y, center.X - length0 * cosf(r2), center.Y - length0 * sinf(r2));
+    DrawLineByAngle(g, &p, center, PMAX, 0, length0);
 
-    p.SetWidth(5);
+    // 凡例の線
+    p.SetWidth(1.9f * scale);
+    for (int i = 0; guideLines[i].percent != 0.0f; i++) {
+        p.SetColor(guideLines[i].color);
 
-    // 線を引く
-    float length = rect.Width / 2 * 0.9f;
-//  float rad = PI * percent / 100.0f;
-    float rad = PI * (percent / 100.0f * (PMAX - PMIN) + PMIN) / 180;
-    float x = center.X - length * cosf(rad);
-    float y = center.Y - length * sinf(rad);
-    g.DrawLine(&p, center.X, center.Y, x, y);
+        DrawLineByAngle(g, &p, center, (guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN), length0 * 0.85f, length0);
+    }
+
+
+    // 針を描く
+    p.SetColor(color);
+    p.SetWidth(5 * scale);
+    DrawLineByAngle(g, &p, center, percent / 100.0f * (PMAX - PMIN) + PMIN, 0, length0 * 0.9f);
 }
+
+inline void DrawLineByAngle(Graphics& g, Pen* p, Gdiplus::PointF& center, float angle, float length1, float length2)
+{
+    float rad = PI * angle / 180;
+    float c1 = cosf(rad);
+    float s1 = sinf(rad);
+    g.DrawLine(p,
+        center.X - (length1 == 0 ? 0 : length1 * c1), center.Y - (length1 == 0 ? 0 : length1 * s1),
+        center.X - length2 * c1,                      center.Y - length2 * s1
+    );
+}
+
