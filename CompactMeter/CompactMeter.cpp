@@ -20,7 +20,7 @@ using namespace Gdiplus;
 DWORD threadId = 0;    // スレッド ID 
 CWorker* pMyWorker = NULL;
 
-HINSTANCE g_hInst;                                // 現在のインスタンス
+HINSTANCE g_hInst;                              // 現在のインスタンス
 WCHAR szTitle[MAX_LOADSTRING];                  // タイトル バーのテキスト
 WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ クラス名
 
@@ -247,17 +247,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         break;
 
-    case WM_KEYUP:
+    case WM_KEYDOWN:
         switch (wParam) {
         case VK_ESCAPE:
         case VK_F12:
             PostMessage(hWnd, WM_CLOSE, 0, 0);
             return 0L;
-        }
-        break;
-
-    case WM_KEYDOWN:
-        switch (wParam) {
         case 'B':
             // Toggle Border
             ToggleBorder();
