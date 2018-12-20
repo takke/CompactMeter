@@ -21,7 +21,7 @@ DWORD threadId = 0;    // スレッド ID
 CWorker* pMyWorker = NULL;
 
 HINSTANCE g_hInst;                              // 現在のインスタンス
-WCHAR szTitle[MAX_LOADSTRING];                  // タイトル バーのテキスト
+WCHAR g_szAppTitle[MAX_LOADSTRING];             // タイトル バーのテキスト
 WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ クラス名
 
 Bitmap* g_offScreenBitmap = NULL;
@@ -74,7 +74,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // グローバル文字列を初期化
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDS_APP_TITLE, g_szAppTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_COMPACTMETER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
@@ -133,7 +133,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
     g_hInst = hInstance;
 
-    HWND hWnd = CreateWindowW(szWindowClass, szTitle, 
+    HWND hWnd = CreateWindowW(szWindowClass, g_szAppTitle, 
                     WS_POPUP,
                     g_pMyInifile->mPosX, g_pMyInifile->mPosY,
                     g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight, nullptr, nullptr, hInstance, nullptr);

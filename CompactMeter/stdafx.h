@@ -21,6 +21,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <windows.h>
 #include <commctrl.h>
 
+#pragma comment(lib, "Version.lib")
+
 #include <Gdiplus.h>
 #pragma comment(lib, "Gdiplus.lib")
 
