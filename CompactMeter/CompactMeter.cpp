@@ -624,8 +624,8 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     DWORD maxTrafficBytes = 300 * MB;
     float percent = 0.0f;
 
-    const Traffic& t = pWorker->traffics[pWorker->traffics.size() - 1]; // 一番新しいもの
-    const Traffic& t0 = pWorker->traffics[0];   // 一番古いもの
+    const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
+    const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
 
     DWORD duration = t.tick - t0.tick;
 

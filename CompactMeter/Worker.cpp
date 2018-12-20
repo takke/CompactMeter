@@ -90,12 +90,15 @@ DWORD WINAPI CWorker::ExecThread()
 void CWorker::CollectCpuUsage(const int &nProcessors, std::vector<PDH_HQUERY> &hQuery, std::vector<PDH_HQUERY> &hCounter, PDH_FMT_COUNTERVALUE &fntValue)
 {
     CpuUsage usage;
+    usage.usages.resize(nProcessors+1);
+
     for (int i = 0; i < nProcessors + 1; i++) {
         PdhCollectQueryData(hQuery[i]);
         PdhGetFormattedCounterValue(hCounter[i], PDH_FMT_LONG, NULL, &fntValue);
-        usage.usages.push_back((float)fntValue.longValue);
+        usage.usages[i] = (float)fntValue.longValue;
     }
     cpuUsages.push_back(usage);
+
     if (cpuUsages.size() > TARGET_FPS) {
         cpuUsages.erase(cpuUsages.begin());
     }
@@ -189,7 +192,7 @@ int CWorker::GetCpuUsage(CpuUsage* out)
         return 0;
     }
 
-    int nCore = cpuUsages[0].usages.size();
+    int nCore = cpuUsages.begin()->usages.size();
 
     // 初期化
     out->usages.resize(nCore);
@@ -198,9 +201,9 @@ int CWorker::GetCpuUsage(CpuUsage* out)
     }
 
     // 平均値を計算する
-    for (int i = 0; i < n; i++) {
+    for (auto it = cpuUsages.begin(); it != cpuUsages.end(); it++) {
         for (int c = 0; c < nCore; c++) {
-            out->usages[c] += cpuUsages[i].usages[c];
+            out->usages[c] += it->usages[c];
         }
     }
     for (int c = 0; c < nCore; c++) {

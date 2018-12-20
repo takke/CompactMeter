@@ -27,10 +27,10 @@ public:
     CComCriticalSection criticalSection;
 
     // Network
-    std::vector<Traffic> traffics;
+    std::list<Traffic> traffics;
 
     // CPU使用率
-    std::vector<CpuUsage> cpuUsages;
+    std::list<CpuUsage> cpuUsages;
 
     int GetCpuUsage(CpuUsage* out);
 
