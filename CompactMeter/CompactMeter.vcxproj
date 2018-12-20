@@ -225,6 +225,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AboutDlg.h" />
+    <ClInclude Include="ConfigDlg.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="MyInifileUtil.h" />
     <ClInclude Include="MyUtil.h" />
@@ -236,6 +237,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AboutDlg.cpp" />
+    <ClCompile Include="ConfigDlg.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="MyInifileUtil.cpp" />
     <ClCompile Include="MyUtil.cpp" />

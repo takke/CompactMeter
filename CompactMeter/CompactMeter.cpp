@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "AboutDlg.h"
+#include "ConfigDlg.h"
 #include "CompactMeter.h"
 #include "Worker.h"
 #include "MyInifileUtil.h"
@@ -36,6 +37,8 @@ boolean g_dragging = false;
 #define WM_NOTIFYTASKTRAYICON   (WM_USER+100)
 #define TRAYICON_ID             0
 
+// 設定画面
+HWND g_hConfigDlgWnd = NULL;
 
 //--------------------------------------------------
 // プロトタイプ宣言
@@ -96,6 +99,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // メイン メッセージ ループ:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
+        // モードレスダイアログはここで処理しない
+        if (g_hConfigDlgWnd != NULL && IsDialogMessage(g_hConfigDlgWnd, &msg)) {
+            continue;
+        }
+
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
             TranslateMessage(&msg);
@@ -218,6 +226,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0L;
             case ID_POPUPMENU_DRAW_BORDER:
                 ToggleBorder();
+                return 0L;
+            case ID_POPUPMENU_SHOW_CONFIG_DIALOG:
+                if (g_hConfigDlgWnd == NULL) {
+                    Logger::d(L"Create config dlg");
+                    g_hConfigDlgWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), hWnd, ConfigDlgProc);
+                }
+                Logger::d(L"Show config dlg");
+                ShowWindow(g_hConfigDlgWnd, SW_SHOW);
+                SetForegroundWindow(g_hConfigDlgWnd);
                 return 0L;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
