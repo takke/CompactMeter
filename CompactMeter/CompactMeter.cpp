@@ -612,7 +612,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, scale);
     }
     y += coreSize;
-    if (y + coreSize >= screenHeight) {
+    if (y + size >= screenHeight) {
         return;
     }
 
