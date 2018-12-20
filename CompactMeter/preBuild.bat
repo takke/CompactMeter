@@ -1,6 +1,9 @@
 @echo off
 
-call killall.bat
+REM ローカルで実行する場合は CompactMeter.exe を終了する
+if "%APPVEYOR_BUILD_NUMBER%" == "" (
+    call killall.bat
+)
 
 
 set OUT_DIR=%1
