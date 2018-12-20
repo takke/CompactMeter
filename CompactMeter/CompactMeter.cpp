@@ -621,7 +621,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     // Network タコメーター描画
     //--------------------------------------------------
     DWORD MB = 1000 * 1000;
-    DWORD maxTrafficBytes = 100 * MB;
+    DWORD maxTrafficBytes = 300 * MB;
     float percent = 0.0f;
 
     const Traffic& t = pWorker->traffics[pWorker->traffics.size() - 1]; // 一番新しいもの
@@ -672,42 +672,41 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // デバッグ表示
     //--------------------------------------------------
-    Font fontTahoma(L"Tahoma", 12);
-    StringFormat format;
-    format.SetAlignment(StringAlignmentNear);
-
-    // 開始 Y 座標
-    rect = Gdiplus::RectF(0, y, screenWidth, screenHeight-y);
-
-    //str.Format(L"Up=%lld(%lld), Down=%lld(%lld)",
-    //  t.out, t.out - t0.out,
-    //  t.in, t.in - t0.in);
-    //g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
-
-    //str.Format(L"Up=%.0f[b/s], Down=%.0f[b/s], %ldms", outb, inb, duration);
-    //rect.Offset(0, 30);
-    //g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
-
-    //str.Format(L"Up=%.1f[kb/s], Down=%.1f[kb/s]", outb / 1024, inb / 1024);
-    //rect.Offset(0, 30);
-    //g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
-
-    SolidBrush mainBrush(Color(255, 192, 192, 192));
-
-    CString strDateTime;
-    SYSTEMTIME st;
-    GetLocalTime(&st);
-    strDateTime.Format(L"%d/%d/%d %d:%d:%d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-
-
     static int iCalled = 0;
     iCalled++;
 
     if (g_pMyInifile->mDebugMode) {
+        Font fontTahoma(L"Tahoma", 12);
+        StringFormat format;
+        format.SetAlignment(StringAlignmentNear);
+
+        // 開始 Y 座標
+        rect = Gdiplus::RectF(0, y, screenWidth, screenHeight-y);
+
+        //str.Format(L"Up=%lld(%lld), Down=%lld(%lld)",
+        //  t.out, t.out - t0.out,
+        //  t.in, t.in - t0.in);
+        //g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
+
+        //str.Format(L"Up=%.0f[b/s], Down=%.0f[b/s], %ldms", outb, inb, duration);
+        //rect.Offset(0, 30);
+        //g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
+
+        //str.Format(L"Up=%.1f[kb/s], Down=%.1f[kb/s]", outb / 1024, inb / 1024);
+        //rect.Offset(0, 30);
+        //g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
+
+        SolidBrush mainBrush(Color(255, 192, 192, 192));
+
+        CString strDateTime;
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        strDateTime.Format(L"%d/%d/%d %d:%d:%d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+
+
         str.Format(L"i=%d, n=%d size=%dx%d %s %.0f", iCalled, pWorker->traffics.size(), rectWindow.right, rectWindow.bottom, (LPCTSTR)strDateTime, size);
         g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
     }
-
 }
 
 inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
@@ -718,7 +717,7 @@ inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
 /**
  * メーターを描画する
  *
- * colors の最後は必ず percent=0.0 にすること
+ * colors, guideLines の最後は必ず percent=0.0 にすること
  */
 void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float scale)
 {
@@ -787,10 +786,28 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
 
     // 凡例の線
     p.SetWidth(1.9f * scale);
+    Font font(L"Tahoma", 6.5f);
+    StringFormat format1;
+    format1.SetAlignment(StringAlignmentCenter);
+    format1.SetLineAlignment(StringAlignmentCenter);
     for (int i = 0; guideLines[i].percent != 0.0f; i++) {
         p.SetColor(guideLines[i].color);
 
-        DrawLineByAngle(g, &p, center, (guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN), length0 * 0.85f, length0);
+        float angle = guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN;
+        DrawLineByAngle(g, &p, center, angle, length0 * 0.85f, length0);
+
+        LPCWSTR text = guideLines[i].text;
+        if (wcslen(text) >= 1) {
+            float rad = PI * angle / 180;
+            float w = length0 / 3;
+            float h = length0 / 5;
+            float length = length0 * 0.72f;
+            Gdiplus::RectF rect1(center.X - length * cosf(rad), center.Y - length * sinf(rad), w, h);
+            rect1.Offset(-w / 2, -h / 2);
+            SolidBrush fontBrush(guideLines[i].color);
+            g.DrawString(text, (int)wcslen(text), &font, rect1, &format1, &fontBrush);
+//            g.DrawRectangle(&p, rect1);
+        }
     }
 
 
