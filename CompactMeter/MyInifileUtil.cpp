@@ -24,9 +24,15 @@ void MyInifileUtil::Load()
 
     mPosX = ReadIntEntry(L"PosX", 0);
     mPosY = ReadIntEntry(L"PosY", 0);
+    mConfigDlgPosX = ReadIntEntry(L"ConfigDlgPosX", INT_MAX);
+    mConfigDlgPosY = ReadIntEntry(L"ConfigDlgPosY", INT_MAX);
 
     mFps = ReadIntEntry(L"FPS", 30);
     NormalizeFps();
+
+    mShowCoreMeters = ReadBooleanEntry(L"ShowCoreMeters", true);
+
+    mTrafficMax = ReadIntEntry(L"TrafficMax", 300 * MB);
 
     mDebugMode = ReadBooleanEntry(L"DebugMode", false);
     mAlwaysOnTop = ReadBooleanEntry(L"AlwaysOnTop", true);
@@ -53,9 +59,15 @@ void MyInifileUtil::Save()
     WriteIntEntry(L"WindowHeight", mWindowHeight);
     WriteIntEntry(L"PosX", mPosX);
     WriteIntEntry(L"PosY", mPosY);
+    WriteIntEntry(L"ConfigDlgPosX", mConfigDlgPosX);
+    WriteIntEntry(L"ConfigDlgPosY", mConfigDlgPosY);
 
     NormalizeFps();
     WriteIntEntry(L"FPS", mFps);
+
+    WriteIntEntry(L"ShowCoreMeters", mShowCoreMeters ? 1 : 0);
+
+    WriteIntEntry(L"TrafficMax", mTrafficMax);
 
     WriteIntEntry(L"DebugMode", mDebugMode ? 1 : 0);
     WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);

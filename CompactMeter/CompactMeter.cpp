@@ -437,6 +437,14 @@ void ShowConfigDlg(HWND &hWnd)
     }
     Logger::d(L"Show config dlg");
     ShowWindow(g_hConfigDlgWnd, SW_SHOW);
+
+    if (g_pMyInifile->mConfigDlgPosX == INT_MAX || g_pMyInifile->mConfigDlgPosY == INT_MAX) {
+        Logger::d(L"初期値なので移動しない");
+    }
+    else {
+        SetWindowPos(g_hConfigDlgWnd, HWND_TOP, g_pMyInifile->mConfigDlgPosX, g_pMyInifile->mConfigDlgPosY, 0, 0, SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOZORDER | SWP_FRAMECHANGED);
+    }
+
     SetForegroundWindow(g_hConfigDlgWnd);
 }
 
@@ -604,41 +612,41 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         str.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", percent, ullUsing/1024/1024, ms.ullTotalPhys/1024/1024);
         DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, 1);
     }
+    y += height;
 
     //--------------------------------------------------
     // 各Core
     //--------------------------------------------------
-    int div = 4;
-    float scale = 2.0f / div;    // 1.0 or 0.5
-    float coreSize = size * scale;
-    float x = 0;
-    for (int i = 0; i < nCore; i++) {
-        if (i % div == 0) {
-            // 左側
-            x = 0;
-            if (i == 0) {
-                y += height;
+    if (g_pMyInifile->mShowCoreMeters) {
+        int div = 4;
+        float scale = 2.0f / div;    // 1.0 or 0.5
+        float coreSize = size * scale;
+        float x = 0;
+        for (int i = 0; i < nCore; i++) {
+            if (i % div == 0) {
+                // 左側
+                x = 0;
+                if (i != 0) {
+                    y += coreSize;
+                }
+                if (y + coreSize >= screenHeight) {
+                    return;
+                }
+
+                rect = Gdiplus::RectF(x, y, coreSize, coreSize);
             }
             else {
-                y += coreSize;
+                // 右側
+                x += coreSize;
+                rect = Gdiplus::RectF(x, y, coreSize, coreSize);
             }
-            if (y + coreSize >= screenHeight) {
-                return;
-            }
-
-            rect = Gdiplus::RectF(x, y, coreSize, coreSize);
+            float percent = cpuUsage.usages[i + 1];
+//          str.Format(L"Core%d (%.0f%%)", i + 1, percent);
+            str.Format(L"Core%d", i + 1);
+            DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, scale);
         }
-        else {
-            // 右側
-            x += coreSize;
-            rect = Gdiplus::RectF(x, y, coreSize, coreSize);
-        }
-        float percent = cpuUsage.usages[i + 1];
-//      str.Format(L"Core%d (%.0f%%)", i + 1, percent);
-        str.Format(L"Core%d", i + 1);
-        DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, scale);
+        y += coreSize;
     }
-    y += coreSize;
     if (y + size >= screenHeight) {
         return;
     }
@@ -647,8 +655,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // Network タコメーター描画
     //--------------------------------------------------
-    DWORD MB = 1000 * 1000;
-    DWORD maxTrafficBytes = 300 * MB;
+    DWORD maxTrafficBytes = g_pMyInifile->mTrafficMax;
     float percent = 0.0f;
 
     const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
@@ -665,19 +672,20 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     inb /= 1000;
     outb /= 1000;
 
-    static MeterColor netColors[] = {
+    MeterColor netColors[] = {
         { KbToPercent(1000, maxTrafficBytes), Color(255,  64,  64) },
         { KbToPercent( 100, maxTrafficBytes), Color(255, 128,  64) },
         { KbToPercent(  10, maxTrafficBytes), Color(192, 192,  64) },
         {                                0.0, Color(192, 192, 192) }
     };
-    static MeterGuide netGuides[] = {
-        { KbToPercent(100000, maxTrafficBytes), Color(255,  64,  64), L"100M" },
-        { KbToPercent( 10000, maxTrafficBytes), Color(255,  64,  64), L"10M"  },
-        { KbToPercent(  1000, maxTrafficBytes), Color(255,  64,  64), L"1M"   },
-        { KbToPercent(   100, maxTrafficBytes), Color(255, 128,  64), L"100K" },
-        { KbToPercent(    10, maxTrafficBytes), Color(192, 192,  64), L"10K"  },
-        {                                  0.0, Color(192, 192, 192), L""     },
+    MeterGuide netGuides[] = {
+        { KbToPercent(1000000, maxTrafficBytes), Color(255,  64,  64), L"1G"   },
+        { KbToPercent( 100000, maxTrafficBytes), Color(255,  64,  64), L"100M" },
+        { KbToPercent(  10000, maxTrafficBytes), Color(255,  64,  64), L"10M"  },
+        { KbToPercent(   1000, maxTrafficBytes), Color(255,  64,  64), L"1M"   },
+        { KbToPercent(    100, maxTrafficBytes), Color(255, 128,  64), L"100K" },
+        { KbToPercent(     10, maxTrafficBytes), Color(192, 192,  64), L"10K"  },
+        {                                   0.0, Color(192, 192, 192), L""     },
     };
 
     // Up(KB単位)
@@ -750,6 +758,12 @@ inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
  */
 void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float scale)
 {
+    if (percent < 0.0f) {
+        percent = 0.0f;
+    } else if (percent > 100.0f) {
+        percent = 100.0f;
+    }
+
     Color color;
     for (int i = 0; ; i++) {
         if (percent >= colors[i].percent) {
@@ -820,6 +834,11 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
     format1.SetAlignment(StringAlignmentCenter);
     format1.SetLineAlignment(StringAlignmentCenter);
     for (int i = 0; guideLines[i].percent != 0.0f; i++) {
+
+        if (guideLines[i].percent > 100) {
+            continue;
+        }
+
         p.SetColor(guideLines[i].color);
 
         float angle = guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN;
