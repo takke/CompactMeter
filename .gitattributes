@@ -1,3 +1,4 @@
 *.cpp text diff
 *.h text diff
-*.rc text diff
+# Custom for MFC 
+*.rc text eol=crlf diff=utf16

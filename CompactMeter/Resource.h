@@ -16,6 +16,8 @@
 #define IDD_CONFIG_DIALOG               130
 #define IDC_SYSLINK_GITHUB_URL          1000
 #define IDC_APPNAME_STATIC              1001
+#define IDC_FPS_EDIT                    1002
+#define IDC_FPS_SPIN                    1003
 #define ID_POPUPMENU_ALWAYSONTOP        32775
 #define ID_POPUPMENU_DEBUGMODE          32776
 #define ID_POPUPMENU_DRAW_BORDER        32778
@@ -29,7 +31,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32782
-#define _APS_NEXT_CONTROL_VALUE         1002
+#define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

@@ -25,6 +25,9 @@ void MyInifileUtil::Load()
     mPosX = ReadIntEntry(L"PosX", 0);
     mPosY = ReadIntEntry(L"PosY", 0);
 
+    mFps = ReadIntEntry(L"FPS", 30);
+    NormalizeFps();
+
     mDebugMode = ReadBooleanEntry(L"DebugMode", false);
     mAlwaysOnTop = ReadBooleanEntry(L"AlwaysOnTop", true);
     mDrawBorder = ReadBooleanEntry(L"DrawBorder", true);
@@ -50,6 +53,10 @@ void MyInifileUtil::Save()
     WriteIntEntry(L"WindowHeight", mWindowHeight);
     WriteIntEntry(L"PosX", mPosX);
     WriteIntEntry(L"PosY", mPosY);
+
+    NormalizeFps();
+    WriteIntEntry(L"FPS", mFps);
+
     WriteIntEntry(L"DebugMode", mDebugMode ? 1 : 0);
     WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);
     WriteIntEntry(L"DrawBorder", mDrawBorder ? 1 : 0);
@@ -61,4 +68,14 @@ void MyInifileUtil::WriteIntEntry(LPCTSTR key, int value)
     CString v;
     v.Format(L"%d", value);
     WritePrivateProfileString(szAppName, key, v, mInifilePath);
+}
+
+void MyInifileUtil::NormalizeFps()
+{
+    if (mFps < FPS_MIN) {
+        mFps = FPS_MIN;
+    }
+    else if (mFps > FPS_MAX) {
+        mFps = FPS_MAX;
+    }
 }

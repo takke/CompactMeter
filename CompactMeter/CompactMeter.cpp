@@ -55,6 +55,7 @@ struct MeterGuide {
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void                ShowConfigDlg(HWND &hWnd);
 void                AddTaskTrayIcon(const HWND &hWnd);
 void                RemoveTaskTrayIcon(const HWND &hWnd);
 void                ShowPopupMenu(const HWND &hWnd, POINT &pt);
@@ -190,6 +191,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             // タスクトレイに常駐
             AddTaskTrayIcon(hWnd);
+
+            if (g_pMyInifile->mDebugMode) {
+                ShowConfigDlg(hWnd);
+            }
         }
         break;
 
@@ -215,6 +220,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_ABOUT:
                 DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
+            case ID_POPUPMENU_SHOW_CONFIG_DIALOG:
+                ShowConfigDlg(hWnd);
+                return 0L;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
@@ -226,15 +234,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0L;
             case ID_POPUPMENU_DRAW_BORDER:
                 ToggleBorder();
-                return 0L;
-            case ID_POPUPMENU_SHOW_CONFIG_DIALOG:
-                if (g_hConfigDlgWnd == NULL) {
-                    Logger::d(L"Create config dlg");
-                    g_hConfigDlgWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), hWnd, ConfigDlgProc);
-                }
-                Logger::d(L"Show config dlg");
-                ShowWindow(g_hConfigDlgWnd, SW_SHOW);
-                SetForegroundWindow(g_hConfigDlgWnd);
                 return 0L;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
@@ -428,6 +427,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void ShowConfigDlg(HWND &hWnd)
+{
+    if (g_hConfigDlgWnd == NULL) {
+        Logger::d(L"Create config dlg");
+        g_hConfigDlgWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), hWnd, ConfigDlgProc);
+    }
+    Logger::d(L"Show config dlg");
+    ShowWindow(g_hConfigDlgWnd, SW_SHOW);
+    SetForegroundWindow(g_hConfigDlgWnd);
 }
 
 void AddTaskTrayIcon(const HWND &hWnd)
@@ -721,7 +731,9 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         strDateTime.Format(L"%d/%d/%d %d:%d:%d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 
 
-        str.Format(L"i=%d, n=%d size=%dx%d %s %.0f", iCalled, pWorker->traffics.size(), rectWindow.right, rectWindow.bottom, (LPCTSTR)strDateTime, size);
+        str.Format(L"i=%d, FPS=%d, n=%d size=%dx%d %s %.0f",
+            iCalled, g_pMyInifile->mFps,
+            pWorker->traffics.size(), rectWindow.right, rectWindow.bottom, (LPCTSTR)strDateTime, size);
         g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
     }
 }
