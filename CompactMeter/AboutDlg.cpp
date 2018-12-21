@@ -44,10 +44,10 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
             WORD version[4];
             if (GetModuleFileVersion(version)) {
-                // ƒo[ƒWƒ‡ƒ“î•ñ‚Í [3] ‚ğg—p‚µ‚È‚¢
+                // ãƒãƒ¼ã‚¸ãƒ§ãƒ³æƒ…å ±ã¯ [3] ã‚’ä½¿ç”¨ã—ãªã„
                 appname.AppendFormat(L"Version %d.%d.%d", version[0], version[1], version[2]);
 
-                // AppVeyor ‚Ìƒrƒ‹ƒh”Ô†‚ğ’Ç‰Á
+                // AppVeyor ã®ãƒ“ãƒ«ãƒ‰ç•ªå·ã‚’è¿½åŠ 
 #ifdef APPVEYOR_BUILD_NUMBER_INT
                 appname.AppendFormat(L" (Build #%d)", APPVEYOR_BUILD_NUMBER_INT);
 #endif
