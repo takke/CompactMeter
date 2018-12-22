@@ -18,6 +18,8 @@ using namespace Gdiplus;
 //--------------------------------------------------
 // グローバル変数
 //--------------------------------------------------
+int g_dpix = 96;
+int g_dpiy = 96;
 DWORD threadId = 0;    // スレッド ID 
 CWorker* pMyWorker = NULL;
 
@@ -65,7 +67,7 @@ void                ToggleAlwaysOnTop(const HWND &hWnd);
 void                DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap);
 void                DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
 float               KbToPercent(float outb, const DWORD &maxTrafficBytes);
-void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float scale);
+void                DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 void                DrawLineByAngle(Graphics& g, Pen* p, Gdiplus::PointF& center, float angle, float length1, float length2);
 
 
@@ -170,6 +172,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
         {
+            // DPI取得
+            auto dc = GetWindowDC(NULL);
+            g_dpix = GetDeviceCaps(dc, LOGPIXELSX);
+            g_dpiy = GetDeviceCaps(dc, LOGPIXELSY);
+            ReleaseDC(NULL, dc);
+
             // 初期化
             GdiplusStartup(&gdiToken, &gdiSI, NULL);
 
@@ -192,9 +200,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // タスクトレイに常駐
             AddTaskTrayIcon(hWnd);
 
-            if (g_pMyInifile->mDebugMode) {
-                ShowConfigDlg(hWnd);
-            }
+//            if (g_pMyInifile->mDebugMode) {
+//                ShowConfigDlg(hWnd);
+//            }
         }
         break;
 
@@ -423,6 +431,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pmmi->ptMinTrackSize.y = 300;
         return 0;
 
+    case WM_DPICHANGED:
+        Logger::d(L"DPICHANGED, %d,%d", LOWORD(wParam), HIWORD(wParam));
+        g_dpix = LOWORD(wParam);
+        g_dpiy = HIWORD(wParam);
+        return 0;
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -643,7 +657,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
             float percent = cpuUsage.usages[i + 1];
 //          str.Format(L"Core%d (%.0f%%)", i + 1, percent);
             str.Format(L"Core%d", i + 1);
-            DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, scale);
+            DrawMeter(g, rect, percent, str, cpuColors, cpuGuides, 1.4f);
         }
         y += coreSize;
     }
@@ -711,7 +725,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     iCalled++;
 
     if (g_pMyInifile->mDebugMode) {
-        Font fontTahoma(L"Tahoma", 12);
+        Font fontTahoma(L"Tahoma", 9 * size / 300.0f);
         StringFormat format;
         format.SetAlignment(StringAlignmentNear);
 
@@ -738,10 +752,11 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         GetLocalTime(&st);
         strDateTime.Format(L"%d/%d/%d %d:%d:%d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 
-
-        str.Format(L"i=%d, FPS=%d, n=%d size=%dx%d %s %.0f",
+        str.Format(L"i=%d, FPS=%d, n=%d size=%dx%d %s %.0f DPI=%d,%d",
             iCalled, g_pMyInifile->mFps,
-            pWorker->traffics.size(), rectWindow.right, rectWindow.bottom, (LPCTSTR)strDateTime, size);
+            pWorker->traffics.size(), rectWindow.right, rectWindow.bottom,
+            (LPCTSTR)strDateTime, size,
+            g_dpix, g_dpiy);
         g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
     }
 }
@@ -756,8 +771,10 @@ inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
  *
  * colors, guideLines の最後は必ず percent=0.0 にすること
  */
-void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float scale)
+void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale)
 {
+    auto size = rect.Width;
+
     if (percent < 0.0f) {
         percent = 0.0f;
     } else if (percent > 100.0f) {
@@ -785,7 +802,7 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
         g.DrawRectangle(&pen1, rect);
     }
 
-    float margin = 5 * (float)scale;
+    float margin = size / 50;
     rect.Offset(margin, margin);
     rect.Width -= margin*2;
     rect.Height -= margin*2;
@@ -797,11 +814,12 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
     //--------------------------------------------------
     // ラベル
     //--------------------------------------------------
-    Font fontTahoma(L"Tahoma", scale == 1.0f ? 11.0f : 9.0f);
+    float scale = size / 300.0f * fontScale;
+    Font fontTahoma(L"Tahoma", 10.0f * scale);
     StringFormat format;
     format.SetAlignment(StringAlignmentNear);
     g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
-    rect.Offset(0, 35 * (float)scale);
+    rect.Offset(0, size / 5.0f);
 
     //--------------------------------------------------
     // メーター描画
@@ -829,7 +847,7 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
 
     // 凡例の線
     p.SetWidth(1.9f * scale);
-    Font font(L"Tahoma", 6.5f);
+    Font font(L"Tahoma", 6.5f * scale);
     StringFormat format1;
     format1.SetAlignment(StringAlignmentCenter);
     format1.SetLineAlignment(StringAlignmentCenter);
