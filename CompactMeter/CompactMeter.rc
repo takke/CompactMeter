@@ -22,6 +22,7 @@
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_JPN)
 LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+#pragma code_page(932)
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -82,7 +83,7 @@ BEGIN
     LTEXT           "Copyright (C) 2018 TAKEUCHI Hiroaki",IDC_STATIC,41,30,114,8
     DEFPUSHBUTTON   "OK",IDOK,140,65,50,14,WS_GROUP
     CONTROL         "GitHub: <a href=""https://github.com/takke/CompactMeter"">github.com/takke/CompactMeter</a>",IDC_SYSLINK_GITHUB_URL,
-                    "SysLink",WS_TABSTOP,41,45,131,13
+                    "SysLink",WS_TABSTOP,41,45,149,13
 END
 
 IDD_CONFIG_DIALOG DIALOGEX 0, 0, 170, 176
