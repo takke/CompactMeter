@@ -58,6 +58,7 @@ struct MeterGuide {
 };
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void                OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam);
 void                ShowConfigDlg(HWND &hWnd);
 void                AddTaskTrayIcon(const HWND &hWnd);
 void                RemoveTaskTrayIcon(const HWND &hWnd);
@@ -304,75 +305,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
 
     case WM_MOUSEMOVE:
-        {
-            POINT pt;
-            pt.x = LOWORD(lParam);
-            pt.y = HIWORD(lParam);
-
-            RECT rt;
-            GetClientRect(hWnd, &rt);
-
-            const float BORDER_SIZE = 8 * g_dpiScale;
-            const float width = (float)rt.right;
-            const float height = (float)rt.bottom;
-
-            // カーソル変更
-            if ((pt.x <= BORDER_SIZE) && (pt.y <= BORDER_SIZE) || (pt.x >= width - BORDER_SIZE) && (pt.y >= height - BORDER_SIZE))
-                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENWSE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
-            else if ((pt.x <= BORDER_SIZE) && (pt.y >= height - BORDER_SIZE) || (pt.x >= width - BORDER_SIZE) && (pt.y <= BORDER_SIZE))
-                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENESW, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
-            else if ((pt.x <= BORDER_SIZE) || (pt.x >= width - BORDER_SIZE))
-                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZEWE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
-            else if ((pt.y <= BORDER_SIZE) || (pt.y >= height - BORDER_SIZE))
-                SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENS, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
-
-            // ドラッグ中は非クライアント領域を偽装する
-            if (wParam & MK_LBUTTON)
-            {
-                g_dragging = true;
-                if (pt.x <= BORDER_SIZE && pt.y <= BORDER_SIZE)
-                    // 左上
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPLEFT, MAKELPARAM(pt.x, pt.y));
-                else if (pt.x >= rt.right - BORDER_SIZE && pt.y >= rt.bottom - BORDER_SIZE)
-                    // 右下
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
-                else if (pt.x <= BORDER_SIZE && pt.y >= rt.bottom - BORDER_SIZE)
-                    // 左下
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMLEFT, MAKELPARAM(pt.x, pt.y));
-                else if (pt.x >= rt.right - BORDER_SIZE && pt.y <= BORDER_SIZE)
-                    // 右上
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPRIGHT, MAKELPARAM(pt.x, pt.y));
-                else if (pt.x <= BORDER_SIZE)
-                    // 左辺
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTLEFT, MAKELPARAM(pt.x, pt.y));
-                else if (pt.x >= rt.right - BORDER_SIZE)
-                    // 右辺
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTRIGHT, MAKELPARAM(pt.x, pt.y));
-                else if (pt.y <= BORDER_SIZE)
-                    // 上辺
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOP, MAKELPARAM(pt.x, pt.y));
-                else if (pt.y >= rt.bottom - BORDER_SIZE)
-                    // 下辺
-                    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOM, MAKELPARAM(pt.x, pt.y));
-                else {
-                    // 外枠以外のドラッグで移動
-                    if (wParam & MK_SHIFT) {
-                        // Shift+ドラッグでリサイズ(暫定)
-                        Logger::d(L"resize start");
-                        SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
-                        Logger::d(L"resize end");
-                    }
-                    else {
-                        // ドラッグで移動
-                        Logger::d(L"drag start");
-                        SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(pt.x, pt.y));
-                        Logger::d(L"drag end");
-                    }
-                }
-                g_dragging = false;
-
-            }
-        }
+        OnMouseMove(hWnd, wParam, lParam);
         return 0L;
 
     case WM_SIZE:
@@ -437,6 +370,77 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
+{
+    POINT pt;
+    pt.x = LOWORD(lParam);
+    pt.y = HIWORD(lParam);
+
+    RECT rt;
+    GetClientRect(hWnd, &rt);
+
+    const float BORDER_SIZE = 8 * g_dpiScale;
+    const float width = (float)rt.right;
+    const float height = (float)rt.bottom;
+
+    // カーソル変更
+    if ((pt.x <= BORDER_SIZE) && (pt.y <= BORDER_SIZE) || (pt.x >= width - BORDER_SIZE) && (pt.y >= height - BORDER_SIZE))
+        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENWSE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+    else if ((pt.x <= BORDER_SIZE) && (pt.y >= height - BORDER_SIZE) || (pt.x >= width - BORDER_SIZE) && (pt.y <= BORDER_SIZE))
+        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENESW, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+    else if ((pt.x <= BORDER_SIZE) || (pt.x >= width - BORDER_SIZE))
+        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZEWE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+    else if ((pt.y <= BORDER_SIZE) || (pt.y >= height - BORDER_SIZE))
+        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENS, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+
+    // ドラッグ中は非クライアント領域を偽装する
+    if (wParam & MK_LBUTTON)
+    {
+        g_dragging = true;
+        if (pt.x <= BORDER_SIZE && pt.y <= BORDER_SIZE)
+            // 左上
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPLEFT, MAKELPARAM(pt.x, pt.y));
+        else if (pt.x >= rt.right - BORDER_SIZE && pt.y >= rt.bottom - BORDER_SIZE)
+            // 右下
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
+        else if (pt.x <= BORDER_SIZE && pt.y >= rt.bottom - BORDER_SIZE)
+            // 左下
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMLEFT, MAKELPARAM(pt.x, pt.y));
+        else if (pt.x >= rt.right - BORDER_SIZE && pt.y <= BORDER_SIZE)
+            // 右上
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPRIGHT, MAKELPARAM(pt.x, pt.y));
+        else if (pt.x <= BORDER_SIZE)
+            // 左辺
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTLEFT, MAKELPARAM(pt.x, pt.y));
+        else if (pt.x >= rt.right - BORDER_SIZE)
+            // 右辺
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTRIGHT, MAKELPARAM(pt.x, pt.y));
+        else if (pt.y <= BORDER_SIZE)
+            // 上辺
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOP, MAKELPARAM(pt.x, pt.y));
+        else if (pt.y >= rt.bottom - BORDER_SIZE)
+            // 下辺
+            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOM, MAKELPARAM(pt.x, pt.y));
+        else {
+            // 外枠以外のドラッグで移動
+            if (wParam & MK_SHIFT) {
+                // Shift+ドラッグでリサイズ(暫定)
+                Logger::d(L"resize start");
+                SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
+                Logger::d(L"resize end");
+            }
+            else {
+                // ドラッグで移動
+                Logger::d(L"drag start");
+                SendMessage(hWnd, WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(pt.x, pt.y));
+                Logger::d(L"drag end");
+            }
+        }
+        g_dragging = false;
+
+    }
 }
 
 void ShowConfigDlg(HWND &hWnd)
