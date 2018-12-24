@@ -15,6 +15,10 @@ using namespace Gdiplus;
 
 #define PI 3.14159265f
 
+// タスクトレイ関連
+#define WM_NOTIFYTASKTRAYICON   (WM_USER+100)
+#define TRAYICON_ID             0
+
 //--------------------------------------------------
 // グローバル変数
 //--------------------------------------------------
@@ -22,10 +26,10 @@ int g_dpix = 96;
 int g_dpiy = 96;
 float g_dpiScale = g_dpix / 96.0f;
 
-DWORD threadId = 0;    // スレッド ID 
-CWorker* pMyWorker = NULL;
+DWORD g_threadId = 0;    // スレッド ID 
+CWorker* g_pWorker = NULL;
 
-HINSTANCE g_hInst;                              // 現在のインスタンス
+HINSTANCE g_hInstance = NULL;                   // 現在のインスタンス
 WCHAR g_szAppTitle[MAX_LOADSTRING];             // タイトル バーのテキスト
 WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ クラス名
 
@@ -36,10 +40,6 @@ MyInifileUtil* g_pMyInifile = NULL;
 
 // ドラッグ中
 boolean g_dragging = false;
-
-// タスクトレイ関連
-#define WM_NOTIFYTASKTRAYICON   (WM_USER+100)
-#define TRAYICON_ID             0
 
 // 設定画面
 HWND g_hConfigDlgWnd = NULL;
@@ -57,7 +57,6 @@ struct MeterGuide {
     LPCWSTR text;
 };
 ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 void                ShowConfigDlg(HWND &hWnd);
 void                AddTaskTrayIcon(const HWND &hWnd);
@@ -81,6 +80,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    g_hInstance = hInstance;
+
     // グローバル文字列を初期化
     LoadStringW(hInstance, IDS_APP_TITLE, g_szAppTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_COMPACTMETER, szWindowClass, MAX_LOADSTRING);
@@ -91,10 +92,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     g_pMyInifile = new MyInifileUtil();
     g_pMyInifile->Load();
 
-    // アプリケーション初期化
-    if (!InitInstance(hInstance, nCmdShow))
+    HWND hWnd = CreateWindowW(szWindowClass, g_szAppTitle,
+        WS_POPUP,
+        g_pMyInifile->mPosX, g_pMyInifile->mPosY,
+        g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight, nullptr, nullptr, hInstance, nullptr);
+    if (!hWnd)
     {
         return FALSE;
+    }
+
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+
+    if (g_pMyInifile->mAlwaysOnTop) {
+        SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     }
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_COMPACTMETER));
@@ -142,32 +153,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     return RegisterClassExW(&wcex);
 }
 
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-    g_hInst = hInstance;
-
-    HWND hWnd = CreateWindowW(szWindowClass, g_szAppTitle, 
-                    WS_POPUP,
-                    g_pMyInifile->mPosX, g_pMyInifile->mPosY,
-                    g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight, nullptr, nullptr, hInstance, nullptr);
-    if (!hWnd)
-    {
-        return FALSE;
-    }
-
-    ShowWindow(hWnd, nCmdShow);
-    UpdateWindow(hWnd);
-
-    if (g_pMyInifile->mAlwaysOnTop) {
-        SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    }
-
-    return TRUE;
-}
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    GdiplusStartupInput gdiSI;
     static ULONG_PTR gdiToken = NULL;
 
     switch (message)
@@ -182,6 +169,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ReleaseDC(NULL, dc);
 
             // 初期化
+            GdiplusStartupInput gdiSI;
+
             GdiplusStartup(&gdiToken, &gdiSI, NULL);
 
             // OffScreen
@@ -189,13 +178,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_offScreen = new Graphics(g_offScreenBitmap);
 
             // スレッド準備
-            pMyWorker = new CWorker();
-            pMyWorker->SetParams(hWnd);
+            g_pWorker = new CWorker();
+            g_pWorker->SetParams(hWnd);
 
             // スレッドの作成 
             HANDLE hThread = CreateThread(NULL, 0,
-                CWorker::ThreadFunc, (LPVOID)pMyWorker,
-                CREATE_SUSPENDED, &threadId);
+                CWorker::ThreadFunc, (LPVOID)g_pWorker,
+                CREATE_SUSPENDED, &g_threadId);
+            if (hThread == FALSE) {
+                exit(0);
+            }
 
             // スレッドの起動
             ResumeThread(hThread);
@@ -229,7 +221,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             switch (wmId)
             {
             case IDM_ABOUT:
-                DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
             case ID_POPUPMENU_SHOW_CONFIG_DIALOG:
                 ShowConfigDlg(hWnd);
@@ -257,7 +249,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
 
-            DrawAll(hWnd, hdc, ps, pMyWorker, g_offScreen, g_offScreenBitmap);
+            DrawAll(hWnd, hdc, ps, g_pWorker, g_offScreen, g_offScreenBitmap);
 
             EndPaint(hWnd, &ps);
         }
@@ -265,7 +257,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_DESTROY:
         // 終了処理
-        pMyWorker->Terminate();
+        g_pWorker->Terminate();
 
         GdiplusShutdown(gdiToken);
 
@@ -451,7 +443,7 @@ void ShowConfigDlg(HWND &hWnd)
 {
     if (g_hConfigDlgWnd == NULL) {
         Logger::d(L"Create config dlg");
-        g_hConfigDlgWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), hWnd, ConfigDlgProc);
+        g_hConfigDlgWnd = CreateDialog(g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), hWnd, ConfigDlgProc);
     }
     Logger::d(L"Show config dlg");
     ShowWindow(g_hConfigDlgWnd, SW_SHOW);
@@ -475,7 +467,7 @@ void AddTaskTrayIcon(const HWND &hWnd)
     nid.uID = TRAYICON_ID;
     nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     nid.uCallbackMessage = WM_NOTIFYTASKTRAYICON;
-    nid.hIcon = LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_COMPACTMETER));
+    nid.hIcon = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_COMPACTMETER));
     wcscpy_s(nid.szTip, L"CompactMeter");
 
     Shell_NotifyIcon(NIM_ADD, &nid);
@@ -497,7 +489,7 @@ void ShowPopupMenu(const HWND &hWnd, POINT &pt)
     static HMENU hMenu;
     static HMENU hSubMenu;
 
-    hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_POPUP_MENU));
+    hMenu = LoadMenu(g_hInstance, MAKEINTRESOURCE(IDR_POPUP_MENU));
     hSubMenu = GetSubMenu(hMenu, 0);
 
     // 初期チェック状態を反映
