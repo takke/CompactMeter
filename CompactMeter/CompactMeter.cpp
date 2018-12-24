@@ -20,6 +20,8 @@ using namespace Gdiplus;
 //--------------------------------------------------
 int g_dpix = 96;
 int g_dpiy = 96;
+float g_dpiScale = g_dpix / 96.0f;
+
 DWORD threadId = 0;    // スレッド ID 
 CWorker* pMyWorker = NULL;
 
@@ -176,6 +178,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             auto dc = GetWindowDC(NULL);
             g_dpix = GetDeviceCaps(dc, LOGPIXELSX);
             g_dpiy = GetDeviceCaps(dc, LOGPIXELSY);
+            g_dpiScale = g_dpix / 96.0f;
             ReleaseDC(NULL, dc);
 
             // 初期化
@@ -317,9 +320,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             RECT rt;
             GetClientRect(hWnd, &rt);
 
-            const int BORDER_SIZE = 6;
-            const int width = rt.right;
-            const int height = rt.bottom;
+            const float BORDER_SIZE = 8 * g_dpiScale;
+            const float width = (float)rt.right;
+            const float height = (float)rt.bottom;
 
             // カーソル変更
             if ((pt.x <= BORDER_SIZE) && (pt.y <= BORDER_SIZE) || (pt.x >= width - BORDER_SIZE) && (pt.y >= height - BORDER_SIZE))
@@ -435,6 +438,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         Logger::d(L"DPICHANGED, %d,%d", LOWORD(wParam), HIWORD(wParam));
         g_dpix = LOWORD(wParam);
         g_dpiy = HIWORD(wParam);
+        g_dpiScale = g_dpix / 96.0f;
         return 0;
 
     default:
@@ -750,13 +754,13 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         CString strDateTime;
         SYSTEMTIME st;
         GetLocalTime(&st);
-        strDateTime.Format(L"%d/%d/%d %d:%d:%d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+        strDateTime.Format(L"%d/%02d/%02d %d:%02d:%02d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 
-        str.Format(L"i=%d, FPS=%d, n=%d size=%dx%d %s %.0f DPI=%d,%d",
+        str.Format(L"i=%d, FPS=%d, n=%d size=%dx%d %s %.0f DPI=%d,%d(%.2f)",
             iCalled, g_pMyInifile->mFps,
             pWorker->traffics.size(), rectWindow.right, rectWindow.bottom,
             (LPCTSTR)strDateTime, size,
-            g_dpix, g_dpiy);
+            g_dpix, g_dpiy, g_dpiScale);
         g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
     }
 }
