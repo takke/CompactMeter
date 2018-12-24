@@ -206,7 +206,7 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
     iCalled++;
 
     if (g_pIniConfig->mDebugMode) {
-        Font fontTahoma(L"Tahoma", 9 * size / 300.0f);
+        Font fontTahoma(L"Tahoma", 19 / g_dpiScale * size / 300.0f);
         StringFormat format;
         format.SetAlignment(StringAlignmentNear);
 
@@ -291,8 +291,8 @@ void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, co
     //--------------------------------------------------
     // ラベル
     //--------------------------------------------------
-    float scale = size / 300.0f * fontScale;
-    Font fontTahoma(L"Tahoma", 10.0f * scale);
+    float scale = 1 / g_dpiScale * size / 300.0f * fontScale;
+    Font fontTahoma(L"Tahoma", 19.0f * scale);
     StringFormat format;
     format.SetAlignment(StringAlignmentNear);
     g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
@@ -324,7 +324,7 @@ void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, co
 
     // 凡例の線
     p.SetWidth(1.9f * scale);
-    Font font(L"Tahoma", 6.5f * scale);
+    Font font(L"Tahoma", 11.5f * scale);
     StringFormat format1;
     format1.SetAlignment(StringAlignmentCenter);
     format1.SetLineAlignment(StringAlignmentCenter);
@@ -349,7 +349,7 @@ void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, co
             rect1.Offset(-w / 2, -h / 2);
             SolidBrush fontBrush(guideLines[i].color);
             g.DrawString(text, (int)wcslen(text), &font, rect1, &format1, &fontBrush);
-            //            g.DrawRectangle(&p, rect1);
+//            g.DrawRectangle(&p, rect1);
         }
     }
 
