@@ -242,11 +242,6 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
     }
 }
 
-inline float MeterDrawer::KbToPercent(float outb, const DWORD &maxTrafficBytes)
-{
-    return (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
-}
-
 /**
  * メーターを描画する
  *
@@ -364,15 +359,3 @@ void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, co
     p.SetWidth(5 * scale);
     DrawLineByAngle(g, &p, center, percent / 100.0f * (PMAX - PMIN) + PMIN, 0, length0 * 0.9f);
 }
-
-inline void MeterDrawer::DrawLineByAngle(Graphics& g, Pen* p, Gdiplus::PointF& center, float angle, float length1, float length2)
-{
-    float rad = PI * angle / 180;
-    float c1 = cosf(rad);
-    float s1 = sinf(rad);
-    g.DrawLine(p,
-        center.X - (length1 == 0 ? 0 : length1 * c1), center.Y - (length1 == 0 ? 0 : length1 * s1),
-        center.X - length2 * c1, center.Y - length2 * s1
-    );
-}
-
