@@ -1,22 +1,22 @@
 ﻿#include "stdafx.h"
-#include "MyInifileUtil.h"
+#include "IniConfig.h"
 #include "MyUtil.h"
 #include "Logger.h"
 
 
-MyInifileUtil::MyInifileUtil()
+IniConfig::IniConfig()
 {
     CString directoryPath = MyUtil::GetModuleDirectoryPath();
     mInifilePath.Format(L"%s\\%s", (LPCWSTR)directoryPath, L"CompactMeter.ini");
 }
 
 
-MyInifileUtil::~MyInifileUtil()
+IniConfig::~IniConfig()
 {
 }
 
 
-void MyInifileUtil::Load()
+void IniConfig::Load()
 {
     // 画面サイズのデフォルト値
     mWindowWidth = ReadIntEntry(L"WindowWidth", 300);
@@ -41,19 +41,19 @@ void MyInifileUtil::Load()
     Logger::d(L"ini file loaded");
 }
 
-int MyInifileUtil::ReadIntEntry(LPCTSTR key, int defaultValue)
+int IniConfig::ReadIntEntry(LPCTSTR key, int defaultValue)
 {
     return GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
 }
 
 
-boolean MyInifileUtil::ReadBooleanEntry(LPCTSTR key, boolean defaultValue)
+boolean IniConfig::ReadBooleanEntry(LPCTSTR key, boolean defaultValue)
 {
     return ReadIntEntry(key, defaultValue ? 1 : 0) != 0;
 }
 
 
-void MyInifileUtil::Save()
+void IniConfig::Save()
 {
     WriteIntEntry(L"WindowWidth", mWindowWidth);
     WriteIntEntry(L"WindowHeight", mWindowHeight);
@@ -75,14 +75,14 @@ void MyInifileUtil::Save()
 }
 
 
-void MyInifileUtil::WriteIntEntry(LPCTSTR key, int value)
+void IniConfig::WriteIntEntry(LPCTSTR key, int value)
 {
     CString v;
     v.Format(L"%d", value);
     WritePrivateProfileString(szAppName, key, v, mInifilePath);
 }
 
-void MyInifileUtil::NormalizeFps()
+void IniConfig::NormalizeFps()
 {
     if (mFps < FPS_MIN) {
         mFps = FPS_MIN;

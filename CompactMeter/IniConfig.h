@@ -2,7 +2,7 @@
 
 #include "Const.h"
 
-class MyInifileUtil
+class IniConfig
 {
 public:
     CString mInifilePath;
@@ -32,8 +32,8 @@ private:
     const wchar_t* szAppName = L"CompactMeter";
 
 public:
-    MyInifileUtil();
-    ~MyInifileUtil();
+    IniConfig();
+    ~IniConfig();
     void Load();
     void Save();
     void NormalizeFps();

@@ -1,10 +1,10 @@
 ﻿#include "stdafx.h"
 #include "Worker.h"
 #include "Logger.h"
-#include "MyInifileUtil.h"
+#include "IniConfig.h"
 
 extern boolean g_dragging;
-extern MyInifileUtil* g_pMyInifile;
+extern IniConfig* g_pIniConfig;
 
 CWorker::CWorker(void)
 {
@@ -65,7 +65,7 @@ DWORD WINAPI CWorker::ExecThread()
             InvalidateRect(hWnd, NULL, FALSE);
         }
 
-        Sleep(1000 / g_pMyInifile->mFps);
+        Sleep(1000 / g_pIniConfig->mFps);
 
 
         // 終了チェック
@@ -99,7 +99,7 @@ void CWorker::CollectCpuUsage(const int &nProcessors, std::vector<PDH_HQUERY> &h
     }
     cpuUsages.push_back(usage);
 
-    while (cpuUsages.size() > (size_t)g_pMyInifile->mFps) {
+    while (cpuUsages.size() > (size_t)g_pIniConfig->mFps) {
         cpuUsages.erase(cpuUsages.begin());
     }
 }
@@ -170,7 +170,7 @@ void CWorker::CollectTraffic()
         printf("no adapters");
     }
 
-    while (traffics.size() > (size_t)g_pMyInifile->mFps) {
+    while (traffics.size() > (size_t)g_pIniConfig->mFps) {
         traffics.erase(traffics.begin());
     }
 

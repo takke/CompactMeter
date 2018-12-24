@@ -253,7 +253,7 @@
     <ClInclude Include="Const.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="MeterDrawer.h" />
-    <ClInclude Include="MyInifileUtil.h" />
+    <ClInclude Include="IniConfig.h" />
     <ClInclude Include="MyUtil.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -266,7 +266,7 @@
     <ClCompile Include="ConfigDlg.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="MeterDrawer.cpp" />
-    <ClCompile Include="MyInifileUtil.cpp" />
+    <ClCompile Include="IniConfig.cpp" />
     <ClCompile Include="MyUtil.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

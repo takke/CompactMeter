@@ -6,7 +6,7 @@
 #include "ConfigDlg.h"
 #include "CompactMeter.h"
 #include "Worker.h"
-#include "MyInifileUtil.h"
+#include "IniConfig.h"
 #include "Logger.h"
 #include "Const.h"
 
@@ -29,7 +29,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // メイン ウィンドウ ク
 Bitmap* g_offScreenBitmap = NULL;
 Graphics* g_offScreen = NULL;
 
-MyInifileUtil* g_pMyInifile = NULL;
+IniConfig* g_pIniConfig = NULL;
 
 // ドラッグ中
 boolean g_dragging = false;
@@ -83,13 +83,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     Logger::Setup();
 
-    g_pMyInifile = new MyInifileUtil();
-    g_pMyInifile->Load();
+    g_pIniConfig = new IniConfig();
+    g_pIniConfig->Load();
 
     HWND hWnd = CreateWindowW(szWindowClass, g_szAppTitle,
         WS_POPUP,
-        g_pMyInifile->mPosX, g_pMyInifile->mPosY,
-        g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight, nullptr, nullptr, hInstance, nullptr);
+        g_pIniConfig->mPosX, g_pIniConfig->mPosY,
+        g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight, nullptr, nullptr, hInstance, nullptr);
     if (!hWnd)
     {
         return FALSE;
@@ -98,7 +98,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
-    if (g_pMyInifile->mAlwaysOnTop) {
+    if (g_pIniConfig->mAlwaysOnTop) {
         SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     }
 
@@ -168,7 +168,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             GdiplusStartup(&gdiToken, &gdiSI, NULL);
 
             // OffScreen
-            g_offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
+            g_offScreenBitmap = new Bitmap(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
             g_offScreen = new Graphics(g_offScreenBitmap);
 
             // スレッド準備
@@ -189,7 +189,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // タスクトレイに常駐
             AddTaskTrayIcon(hWnd);
 
-//            if (g_pMyInifile->mDebugMode) {
+//            if (g_pInConfig->mDebugMode) {
 //                ShowConfigDlg(hWnd);
 //            }
         }
@@ -309,17 +309,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 //          printf("size: %dx%d\n", rectWindow.right, rectWindow.bottom);
 
             Logger::d(L"サイズ変更 %dx%d => %dx%d",
-                g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight,
+                g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight,
                 rectWindow.right, rectWindow.bottom);
 
-            if (g_pMyInifile->mWindowWidth == rectWindow.right && g_pMyInifile->mWindowHeight == rectWindow.bottom) {
+            if (g_pIniConfig->mWindowWidth == rectWindow.right && g_pIniConfig->mWindowHeight == rectWindow.bottom) {
                 Logger::d(L"同一なので無視");
                 return 0;
             }
 
-            g_pMyInifile->mWindowWidth = rectWindow.right;
-            g_pMyInifile->mWindowHeight = rectWindow.bottom;
-            g_pMyInifile->Save();
+            g_pIniConfig->mWindowWidth = rectWindow.right;
+            g_pIniConfig->mWindowHeight = rectWindow.bottom;
+            g_pIniConfig->Save();
 
             // オフスクリーン再生成
             if (g_offScreenBitmap != NULL) {
@@ -328,7 +328,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (g_offScreen != NULL) {
                 delete g_offScreen;
             }
-            g_offScreenBitmap = new Bitmap(g_pMyInifile->mWindowWidth, g_pMyInifile->mWindowHeight);
+            g_offScreenBitmap = new Bitmap(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
             g_offScreen = new Graphics(g_offScreenBitmap);
 
         }
@@ -339,9 +339,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 移動 => INIに位置を保存
             int x = LOWORD(lParam);
             int y = HIWORD(lParam);
-            g_pMyInifile->mPosX = x;
-            g_pMyInifile->mPosY = y;
-            g_pMyInifile->Save();
+            g_pIniConfig->mPosX = x;
+            g_pIniConfig->mPosY = y;
+            g_pIniConfig->Save();
         }
         return 0;
 
@@ -445,11 +445,11 @@ void ShowConfigDlg(HWND &hWnd)
     Logger::d(L"Show config dlg");
     ShowWindow(g_hConfigDlgWnd, SW_SHOW);
 
-    if (g_pMyInifile->mConfigDlgPosX == INT_MAX || g_pMyInifile->mConfigDlgPosY == INT_MAX) {
+    if (g_pIniConfig->mConfigDlgPosX == INT_MAX || g_pIniConfig->mConfigDlgPosY == INT_MAX) {
         Logger::d(L"初期値なので移動しない");
     }
     else {
-        SetWindowPos(g_hConfigDlgWnd, HWND_TOP, g_pMyInifile->mConfigDlgPosX, g_pMyInifile->mConfigDlgPosY, 0, 0, SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOZORDER | SWP_FRAMECHANGED);
+        SetWindowPos(g_hConfigDlgWnd, HWND_TOP, g_pIniConfig->mConfigDlgPosX, g_pIniConfig->mConfigDlgPosY, 0, 0, SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOZORDER | SWP_FRAMECHANGED);
     }
 
     SetForegroundWindow(g_hConfigDlgWnd);
@@ -490,9 +490,9 @@ void ShowPopupMenu(const HWND &hWnd, POINT &pt)
     hSubMenu = GetSubMenu(hMenu, 0);
 
     // 初期チェック状態を反映
-    CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pMyInifile->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
-    CheckMenuItem(hSubMenu, ID_POPUPMENU_DEBUGMODE, MF_BYCOMMAND | (g_pMyInifile->mDebugMode ? MFS_CHECKED : MFS_UNCHECKED));
-    CheckMenuItem(hSubMenu, ID_POPUPMENU_DRAW_BORDER, MF_BYCOMMAND | (g_pMyInifile->mDrawBorder ? MFS_CHECKED : MFS_UNCHECKED));
+    CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pIniConfig->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
+    CheckMenuItem(hSubMenu, ID_POPUPMENU_DEBUGMODE, MF_BYCOMMAND | (g_pIniConfig->mDebugMode ? MFS_CHECKED : MFS_UNCHECKED));
+    CheckMenuItem(hSubMenu, ID_POPUPMENU_DRAW_BORDER, MF_BYCOMMAND | (g_pIniConfig->mDrawBorder ? MFS_CHECKED : MFS_UNCHECKED));
 
     SetForegroundWindow(hWnd);
 
@@ -503,21 +503,21 @@ void ShowPopupMenu(const HWND &hWnd, POINT &pt)
 
 void ToggleBorder()
 {
-    g_pMyInifile->mDrawBorder = !g_pMyInifile->mDrawBorder;
-    g_pMyInifile->Save();
+    g_pIniConfig->mDrawBorder = !g_pIniConfig->mDrawBorder;
+    g_pIniConfig->Save();
 }
 
 void ToggleDebugMode()
 {
-    g_pMyInifile->mDebugMode = !g_pMyInifile->mDebugMode;
-    g_pMyInifile->Save();
+    g_pIniConfig->mDebugMode = !g_pIniConfig->mDebugMode;
+    g_pIniConfig->Save();
 }
 
 void ToggleAlwaysOnTop(const HWND &hWnd)
 {
-    g_pMyInifile->mAlwaysOnTop = !g_pMyInifile->mAlwaysOnTop;
-    g_pMyInifile->Save();
-    SetWindowPos(hWnd, g_pMyInifile->mAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    g_pIniConfig->mAlwaysOnTop = !g_pIniConfig->mAlwaysOnTop;
+    g_pIniConfig->Save();
+    SetWindowPos(hWnd, g_pIniConfig->mAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* offScreen, Bitmap* offScreenBitmap)
@@ -528,8 +528,8 @@ void DrawAll(HWND hWnd, HDC hdc, PAINTSTRUCT ps, CWorker* pWorker, Graphics* off
     // dump
     //--------------------------------------------------
     SolidBrush backgroundBrush(Color(255, 10, 10, 10));
-    float screenWidth = (float)g_pMyInifile->mWindowWidth;
-    float screenHeight = (float)g_pMyInifile->mWindowHeight;
+    float screenWidth = (float)g_pIniConfig->mWindowWidth;
+    float screenHeight = (float)g_pIniConfig->mWindowHeight;
     Gdiplus::RectF rect = Gdiplus::RectF(0.0f, 0.0f, screenWidth, screenHeight);
 
     g.FillRectangle(&backgroundBrush, rect);
@@ -624,7 +624,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // 各Core
     //--------------------------------------------------
-    if (g_pMyInifile->mShowCoreMeters) {
+    if (g_pIniConfig->mShowCoreMeters) {
         int div = 4;
         float scale = 2.0f / div;    // 1.0 or 0.5
         float coreSize = size * scale;
@@ -662,7 +662,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // Network タコメーター描画
     //--------------------------------------------------
-    DWORD maxTrafficBytes = g_pMyInifile->mTrafficMax;
+    DWORD maxTrafficBytes = g_pIniConfig->mTrafficMax;
     float percent = 0.0f;
 
     const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
@@ -717,7 +717,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
     static int iCalled = 0;
     iCalled++;
 
-    if (g_pMyInifile->mDebugMode) {
+    if (g_pIniConfig->mDebugMode) {
         Font fontTahoma(L"Tahoma", 9 * size / 300.0f);
         StringFormat format;
         format.SetAlignment(StringAlignmentNear);
@@ -746,7 +746,7 @@ void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, flo
         strDateTime.Format(L"%d/%02d/%02d %d:%02d:%02d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 
         str.Format(L"i=%d, FPS=%d, n=%d size=%dx%d %s %.0f DPI=%d,%d(%.2f)",
-            iCalled, g_pMyInifile->mFps,
+            iCalled, g_pIniConfig->mFps,
             pWorker->traffics.size(), rectWindow.right, rectWindow.bottom,
             (LPCTSTR)strDateTime, size,
             g_dpix, g_dpiy, g_dpiScale);
@@ -789,7 +789,7 @@ void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* st
     //--------------------------------------------------
     // 枠線
     //--------------------------------------------------
-    if (g_pMyInifile->mDrawBorder) {
+    if (g_pIniConfig->mDrawBorder) {
 
         Pen pen1(Color(64, 64, 64), 1);
         g.DrawRectangle(&pen1, rect);

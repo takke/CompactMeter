@@ -2,10 +2,10 @@
 #include "ConfigDlg.h"
 #include "Logger.h"
 #include "resource.h"
-#include "MyInifileUtil.h"
+#include "IniConfig.h"
 
 extern HWND g_hConfigDlgWnd;
-extern MyInifileUtil* g_pMyInifile;
+extern IniConfig* g_pIniConfig;
 
 struct TRAFFIC_MAX_COMBO_DATA {
     LPCWSTR label;
@@ -35,10 +35,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         //--------------------------------------------------
 
         // FPS
-        SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pMyInifile->mFps, FALSE);
+        SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pIniConfig->mFps, FALSE);
 
         // コア別メーター
-        CheckDlgButton(hDlg, IDC_SHOW_CORE_METER_CHECK, g_pMyInifile->mShowCoreMeters ? BST_CHECKED : BST_UNCHECKED);
+        CheckDlgButton(hDlg, IDC_SHOW_CORE_METER_CHECK, g_pIniConfig->mShowCoreMeters ? BST_CHECKED : BST_UNCHECKED);
 
         // 最大通信量
         HWND hTraffixMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
@@ -46,7 +46,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         for (int i = 0; TRAFFIC_MAX_COMBO_VALUES[i].label != NULL; i++) {
             SendMessage(hTraffixMaxCombo, CB_ADDSTRING, NULL, (WPARAM)TRAFFIC_MAX_COMBO_VALUES[i].label);
 
-            if (g_pMyInifile->mTrafficMax == TRAFFIC_MAX_COMBO_VALUES[i].value) {
+            if (g_pIniConfig->mTrafficMax == TRAFFIC_MAX_COMBO_VALUES[i].value) {
                 iSelected = i;
             }
         }
@@ -69,19 +69,19 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 HWND hTraffixMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
                 int iSelected = SendMessage(hTraffixMaxCombo, CB_GETCURSEL, 0, 0);
 
-                g_pMyInifile->mTrafficMax = TRAFFIC_MAX_COMBO_VALUES[iSelected].value;
+                g_pIniConfig->mTrafficMax = TRAFFIC_MAX_COMBO_VALUES[iSelected].value;
 
-                Logger::d(L"selchange %d -> %d", iSelected, g_pMyInifile->mTrafficMax);
+                Logger::d(L"selchange %d -> %d", iSelected, g_pIniConfig->mTrafficMax);
 
-                g_pMyInifile->Save();
+                g_pIniConfig->Save();
 
             }
             return (INT_PTR)TRUE;
 
         case IDC_SHOW_CORE_METER_CHECK:
             if (HIWORD(wParam) == BN_CLICKED) {
-                g_pMyInifile->mShowCoreMeters = IsDlgButtonChecked(hDlg, IDC_SHOW_CORE_METER_CHECK) == BST_CHECKED;
-                g_pMyInifile->Save();
+                g_pIniConfig->mShowCoreMeters = IsDlgButtonChecked(hDlg, IDC_SHOW_CORE_METER_CHECK) == BST_CHECKED;
+                g_pIniConfig->Save();
             }
             return (INT_PTR)TRUE;
         }
@@ -105,11 +105,11 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                         n++;
                     }
 
-                    g_pMyInifile->mFps = n;
-                    g_pMyInifile->NormalizeFps();
+                    g_pIniConfig->mFps = n;
+                    g_pIniConfig->NormalizeFps();
 
-                    SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pMyInifile->mFps, FALSE);
-                    g_pMyInifile->Save();
+                    SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pIniConfig->mFps, FALSE);
+                    g_pIniConfig->Save();
                 }
 
             }
@@ -123,9 +123,9 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             // 移動 => INIに位置を保存
             RECT rect;
             GetWindowRect(hDlg, &rect);
-            g_pMyInifile->mConfigDlgPosX = rect.left;
-            g_pMyInifile->mConfigDlgPosY = rect.top;
-            g_pMyInifile->Save();
+            g_pIniConfig->mConfigDlgPosX = rect.left;
+            g_pIniConfig->mConfigDlgPosY = rect.top;
+            g_pIniConfig->Save();
         }
         break;
     }
