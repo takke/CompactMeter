@@ -8,16 +8,9 @@
 #include "Worker.h"
 #include "MyInifileUtil.h"
 #include "Logger.h"
+#include "Const.h"
 
 using namespace Gdiplus;
-
-#define MAX_LOADSTRING 100
-
-#define PI 3.14159265f
-
-// タスクトレイ関連
-#define WM_NOTIFYTASKTRAYICON   (WM_USER+100)
-#define TRAYICON_ID             0
 
 //--------------------------------------------------
 // グローバル変数

@@ -1,7 +1,6 @@
 #pragma once
 
-const long MB = 1000 * 1000;
-const long GB = 1000 * 1000 * 1000;
+#include "Const.h"
 
 class MyInifileUtil
 {
