@@ -15,6 +15,7 @@ public:
     int mConfigDlgPosY = 0;
 
     boolean mDebugMode = false;
+    boolean mDirect2DMode = true;
 
     // 設定値
     int mFps = 30;

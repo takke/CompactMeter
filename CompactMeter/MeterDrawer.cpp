@@ -2,28 +2,38 @@
 #include "MeterDrawer.h"
 #include "Worker.h"
 #include "IniConfig.h"
+#include "Logger.h"
 
 extern int g_dpix;
 extern int g_dpiy;
 extern float g_dpiScale;
 extern IniConfig* g_pIniConfig;
 
-MeterDrawer::~MeterDrawer()
-{
-}
+void MeterDrawer::Init(HWND hWnd, int width, int height) {
 
-void MeterDrawer::Init(int width, int height) {
+    //--------------------------------------------------
+    // Direct2D
+    //--------------------------------------------------
 
+    // Create D2D factory
+    D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2DFactory);
+
+    //--------------------------------------------------
+    // GDI+
+    //--------------------------------------------------
     GdiplusStartupInput gdiSI;
 
     GdiplusStartup(&m_gdiToken, &gdiSI, NULL);
 
-    // OffScreen作成
-    Resize(width, height);
+    // GDI+ OffScreen 作成, Direct2D 初期化
+    Resize(hWnd, width, height);
 }
 
-void MeterDrawer::Resize(int width, int height) {
+void MeterDrawer::Resize(HWND hWnd, int width, int height) {
 
+    //--------------------------------------------------
+    // GDI+
+    //--------------------------------------------------
     if (m_pOffScreenBitmap != NULL) {
         delete m_pOffScreenBitmap;
     }
@@ -32,6 +42,14 @@ void MeterDrawer::Resize(int width, int height) {
     }
     m_pOffScreenBitmap = new Bitmap(width, height);
     m_pOffScreenGraphics = new Graphics(m_pOffScreenBitmap);
+
+
+    //--------------------------------------------------
+    // Direct2D
+    //--------------------------------------------------
+    DiscardDeviceResources();
+    CreateDeviceResources(hWnd, width, height);
+
 }
 
 void MeterDrawer::Shutdown() {
@@ -41,30 +59,133 @@ void MeterDrawer::Shutdown() {
 
 void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 {
-    //--------------------------------------------------
-    // 描画
-    //--------------------------------------------------
-    m_stopWatch1.Start();
+    HRESULT hr;
+    RECT rc;
 
-    Draw(hWnd, pWorker);
+    GetClientRect(hWnd, &rc);
 
-    m_stopWatch1.Stop();
+    // Create the DC render target.
+    hr = CreateDeviceResources(hWnd, rc.right, rc.bottom);
 
-    //--------------------------------------------------
-    // 実画面に転送
-    //--------------------------------------------------
-    m_stopWatch2.Start();
+    if (SUCCEEDED(hr))
+    {
+        if (g_pIniConfig->mDirect2DMode) {
 
-    Graphics onScreen(hdc);
-    onScreen.DrawImage(m_pOffScreenBitmap, 0, 0);
+            //--------------------------------------------------
+            // 描画
+            //--------------------------------------------------
+            m_stopWatch1.Start();
 
-    m_stopWatch2.Stop();
+            Draw(*m_pOffScreenGraphics, hWnd, pWorker);
+
+            m_stopWatch1.Stop();
+
+            //--------------------------------------------------
+            // Direct2D に転送
+            //--------------------------------------------------
+            m_stopWatch2.Start();
+
+            m_pRenderTarget->BeginDraw();
+
+            HDC hdc;
+            m_pInteropRenderTarget->GetDC(D2D1_DC_INITIALIZE_MODE_COPY, &hdc);
+
+            Graphics onScreen(hdc);
+            onScreen.DrawImage(m_pOffScreenBitmap, 0, 0);
+
+            m_pInteropRenderTarget->ReleaseDC(&rc);
+            m_pRenderTarget->EndDraw();
+
+            m_stopWatch2.Stop();
+
+        } else {
+
+            //--------------------------------------------------
+            // 描画
+            //--------------------------------------------------
+            m_stopWatch1.Start();
+
+            Draw(*m_pOffScreenGraphics, hWnd, pWorker);
+
+            m_stopWatch1.Stop();
+
+            //--------------------------------------------------
+            // 実画面に転送
+            //--------------------------------------------------
+            m_stopWatch2.Start();
+
+            Graphics onScreen(hdc);
+            onScreen.DrawImage(m_pOffScreenBitmap, 0, 0);
+
+            m_stopWatch2.Stop();
+        }
+
+    }
+
+    if (hr == D2DERR_RECREATE_TARGET)
+    {
+        hr = S_OK;
+
+        Logger::d(L"D2DERR_RECREATE_TARGET");
+
+        DiscardDeviceResources();
+    }
+
+
 }
 
-void MeterDrawer::Draw(HWND hWnd, CWorker* pWorker)
+HRESULT MeterDrawer::CreateDeviceResources(HWND hWnd, int width, int height)
 {
-    Graphics& g = *m_pOffScreenGraphics;
+    HRESULT hr = S_OK;
 
+    if (!m_pRenderTarget)
+    {
+        FLOAT dpiX, dpiY;
+        m_pD2DFactory->GetDesktopDpi(&dpiX, &dpiY);
+        Logger::d(L"DPI: %.2f,%.2f", dpiX, dpiY);
+
+        const D2D1_PIXEL_FORMAT format =
+            D2D1::PixelFormat(
+                DXGI_FORMAT_B8G8R8A8_UNORM,
+                D2D1_ALPHA_MODE_PREMULTIPLIED);
+
+        const D2D1_RENDER_TARGET_PROPERTIES properties =
+            D2D1::RenderTargetProperties(
+                D2D1_RENDER_TARGET_TYPE_DEFAULT,
+                format,
+                dpiX,
+                dpiY,
+                D2D1_RENDER_TARGET_USAGE_GDI_COMPATIBLE);
+
+        auto ScreenSize = D2D1::SizeU(width, height);
+
+        HRESULT hr = m_pD2DFactory->CreateHwndRenderTarget(
+            properties,
+            D2D1::HwndRenderTargetProperties(hWnd, ScreenSize),
+            &m_pRenderTarget
+        );
+
+        if (SUCCEEDED(hr)) {
+            hr = m_pRenderTarget->QueryInterface(
+                __uuidof(ID2D1GdiInteropRenderTarget),
+                (void**)&m_pInteropRenderTarget
+            );
+        }
+
+    }
+
+    return hr;
+}
+
+void MeterDrawer::DiscardDeviceResources()
+{
+    SafeRelease(&m_pRenderTarget);
+    SafeRelease(&m_pBlackBrush);
+    SafeRelease(&m_pInteropRenderTarget);
+}
+
+void MeterDrawer::Draw(Graphics& g, HWND hWnd, CWorker* pWorker)
+{
     //--------------------------------------------------
     // Draw
     //--------------------------------------------------
@@ -292,12 +413,14 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
                    L"n=%d size=%dx%d \n"
                    L"%s %.0f DPI=%d,%d(%.2f)\n"
                    L"描画=%5.1fms\n転送=%5.1fms\n計測=%5.1fms\n"
+                   L"RenderMode=%s\n"
             ,
             iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps,
             pWorker->traffics.size(), rectWindow.right, rectWindow.bottom,
             (LPCTSTR)strDateTime, size,
             g_dpix, g_dpiy, g_dpiScale,
-            duration1/1000.0, duration2/1000.0, durationWorker/1000.0
+            duration1/1000.0, duration2/1000.0, durationWorker/1000.0,
+            g_pIniConfig->mDirect2DMode ? L"Direct2D" : L"GDI"
         );
         g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
     }

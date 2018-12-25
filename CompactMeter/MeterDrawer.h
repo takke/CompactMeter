@@ -29,21 +29,38 @@ private:
     StopWatch   m_stopWatch1;
     StopWatch   m_stopWatch2;
 
+    // Direct2D
+    ID2D1Factory*                m_pD2DFactory;
+    ID2D1HwndRenderTarget*       m_pRenderTarget;
+    ID2D1GdiInteropRenderTarget* m_pInteropRenderTarget;
+    ID2D1SolidColorBrush*        m_pBlackBrush;
+
 public:
     MeterDrawer()
-        : m_gdiToken(NULL), m_pOffScreenBitmap(NULL), m_pOffScreenGraphics(NULL) {
+        : m_gdiToken(NULL), m_pOffScreenBitmap(NULL), m_pOffScreenGraphics(NULL)
+        , m_pD2DFactory(NULL), m_pRenderTarget(NULL), m_pBlackBrush(NULL), m_pInteropRenderTarget(NULL)
+    {
     }
 
-    ~MeterDrawer();
+    ~MeterDrawer()
+    {
+        SafeRelease(&m_pD2DFactory);
+        SafeRelease(&m_pRenderTarget);
+        SafeRelease(&m_pBlackBrush);
+        SafeRelease(&m_pInteropRenderTarget);
+    }
 
-    void Init(int width, int height);
-    void Resize(int width, int height);
+    void Init(HWND hWnd, int width, int height);
+    void Resize(HWND hWnd, int width, int height);
     void Shutdown();
 
     void DrawToDC(HDC hdc, HWND hWnd, CWorker* pWorker);
 
+    HRESULT CreateDeviceResources(HWND hWnd, int width, int height);
+    void DiscardDeviceResources();
+
 private:
-    void Draw(HWND hWnd, CWorker* pWorker);
+    void Draw(Graphics& g, HWND hWnd, CWorker* pWorker);
     void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
     void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 

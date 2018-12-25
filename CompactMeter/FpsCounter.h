@@ -11,7 +11,7 @@ public:
     FpsCounter()
         : start(0), last(0)
     {
-        ticks.resize(10);
+        ticks.resize(50);
 
         // fill
         DWORD tick = GetTickCount();

@@ -152,8 +152,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_dpiScale = g_dpix / 96.0f;
             ReleaseDC(NULL, dc);
 
-            // GDI+ 初期化
-            g_meterDrawer.Init(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
+            // GDI+, Direct2D 初期化
+            g_meterDrawer.Init(hWnd, g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
 
             // スレッド準備
             g_pWorker = new CWorker();
@@ -223,6 +223,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_PAINT:
+    case WM_DISPLAYCHANGE:
         OnPaint(hWnd);
         break;
 
@@ -243,6 +244,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case VK_F12:
             PostMessage(hWnd, WM_CLOSE, 0, 0);
             return 0L;
+
+        case '2':
+            g_pIniConfig->mDirect2DMode = !g_pIniConfig->mDirect2DMode;
+            return 0L;
+
         case 'B':
             // Toggle Border
             ToggleBorder();
@@ -299,7 +305,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_pIniConfig->Save();
 
             // オフスクリーン再生成
-            g_meterDrawer.Resize(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
+            g_meterDrawer.Resize(hWnd, g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
 
         }
         return 0;

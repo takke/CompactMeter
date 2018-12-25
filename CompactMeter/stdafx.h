@@ -26,6 +26,12 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <Gdiplus.h>
 #pragma comment(lib, "Gdiplus.lib")
 
+#include <d2d1.h>
+#include <d2d1helper.h>
+//#include <dwrite.h>
+//#include <wincodec.h>
+#pragma comment(lib, "D2d1.lib")
+
 #include <pdh.h>    
 #pragma comment(lib, "pdh.lib")
 
@@ -39,3 +45,23 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <list>
 
 // プログラムに必要な追加ヘッダーをここで参照してください
+
+/******************************************************************
+*                                                                 *
+*  Macros                                                         *
+*                                                                 *
+******************************************************************/
+
+template<class Interface>
+inline void
+SafeRelease(
+    Interface **ppInterfaceToRelease
+)
+{
+    if (*ppInterfaceToRelease != NULL)
+    {
+        (*ppInterfaceToRelease)->Release();
+
+        (*ppInterfaceToRelease) = NULL;
+    }
+}
