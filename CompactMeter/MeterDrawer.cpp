@@ -234,7 +234,7 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
     m_fpsCounter.CountOnDraw();
 
     if (g_pIniConfig->mDebugMode) {
-        Font fontTahoma(L"Tahoma", 19 / g_dpiScale * size / 300.0f);
+        Font fontTahoma(L"ＭＳゴシック", 19 / g_dpiScale * size / 300.0f);
         StringFormat format;
         format.SetAlignment(StringAlignmentNear);
 
@@ -261,11 +261,21 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
         GetLocalTime(&st);
         strDateTime.Format(L"%d/%02d/%02d %d:%02d:%02d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 
-        str.Format(L"i=%d, FPS=%d/%d, n=%d size=%dx%d %s %.0f DPI=%d,%d(%.2f)",
+        // デバッグ用計測器
+        DWORD duration1 = m_stopWatch1.GetAverageDurationMicroseconds();
+        DWORD duration2 = m_stopWatch2.GetAverageDurationMicroseconds();
+
+        str.Format(L"i=%d, FPS=%d/%d, "
+                   L"n=%d size=%dx%d \n"
+                   L"%s %.0f DPI=%d,%d(%.2f)\n"
+                   L"描画=%5.1fms\n転送=%5.1fms \n"
+            ,
             iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps,
             pWorker->traffics.size(), rectWindow.right, rectWindow.bottom,
             (LPCTSTR)strDateTime, size,
-            g_dpix, g_dpiy, g_dpiScale);
+            g_dpix, g_dpiy, g_dpiScale,
+            duration1/1000.0, duration2/1000.0
+        );
         g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
     }
 }

@@ -3,6 +3,7 @@
 #include "Worker.h"
 #include "Const.h"
 #include "FpsCounter.h"
+#include "StopWatch.h"
 
 using namespace Gdiplus;
 
@@ -23,6 +24,10 @@ public:
     Bitmap*     m_pOffScreenBitmap;
     Graphics*   m_pOffScreenGraphics;
     FpsCounter  m_fpsCounter;
+
+    // デバッグ用計測器
+    StopWatch   m_stopWatch1;
+    StopWatch   m_stopWatch2;
 
 public:
     MeterDrawer()
