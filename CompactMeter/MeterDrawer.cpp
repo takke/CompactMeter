@@ -8,16 +8,41 @@ extern int g_dpiy;
 extern float g_dpiScale;
 extern IniConfig* g_pIniConfig;
 
-MeterDrawer::MeterDrawer()
-{
-}
-
 MeterDrawer::~MeterDrawer()
 {
 }
 
-void MeterDrawer::Draw(Graphics& g, HWND hWnd, CWorker* pWorker)
+void MeterDrawer::Init(int width, int height) {
+
+    GdiplusStartupInput gdiSI;
+
+    GdiplusStartup(&m_gdiToken, &gdiSI, NULL);
+
+    // OffScreen作成
+    Resize(width, height);
+}
+
+void MeterDrawer::Resize(int width, int height) {
+
+    if (m_pOffScreenBitmap != NULL) {
+        delete m_pOffScreenBitmap;
+    }
+    if (m_pOffScreenGraphics != NULL) {
+        delete m_pOffScreenGraphics;
+    }
+    m_pOffScreenBitmap = new Bitmap(width, height);
+    m_pOffScreenGraphics = new Graphics(m_pOffScreenBitmap);
+}
+
+void MeterDrawer::Shutdown() {
+
+    GdiplusShutdown(m_gdiToken);
+}
+
+void MeterDrawer::Draw(HWND hWnd, CWorker* pWorker)
 {
+    Graphics& g = *m_pOffScreenGraphics;
+
     //--------------------------------------------------
     // Draw
     //--------------------------------------------------

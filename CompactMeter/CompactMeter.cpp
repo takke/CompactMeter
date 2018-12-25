@@ -16,31 +16,30 @@ using namespace Gdiplus;
 //--------------------------------------------------
 // グローバル変数
 //--------------------------------------------------
-// 高DPI対応
-int g_dpix = 96;
-int g_dpiy = 96;
-float g_dpiScale = g_dpix / 96.0f;
-
-DWORD       g_threadId = 0;     // スレッド ID 
-CWorker*    g_pWorker = NULL;
-
-HINSTANCE   g_hInstance = NULL;                     // 現在のインスタンス
+HINSTANCE   g_hInstance = NULL;
 WCHAR       g_szAppTitle[MAX_LOADSTRING];           // タイトル バーのテキスト
 WCHAR       g_szWindowClass[MAX_LOADSTRING];        // メイン ウィンドウ クラス名
 
+// 高DPI対応
+int         g_dpix = 96;
+int         g_dpiy = 96;
+float       g_dpiScale = g_dpix / 96.0f;
+
+// ワーカースレッド
+DWORD       g_threadId = 0;
+CWorker*    g_pWorker = NULL;
+
 // 描画関連
-Bitmap*     g_offScreenBitmap = NULL;
-Graphics*   g_offScreen = NULL;
 MeterDrawer g_meterDrawer;
 
 // 設定データ
-IniConfig* g_pIniConfig = NULL;
+IniConfig*  g_pIniConfig = NULL;
 
 // ドラッグ中
-boolean g_dragging = false;
+boolean     g_dragging = false;
 
 // 設定画面
-HWND g_hConfigDlgWnd = NULL;
+HWND        g_hConfigDlgWnd = NULL;
 
 
 //--------------------------------------------------
@@ -142,8 +141,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static ULONG_PTR gdiToken = NULL;
-
     switch (message)
     {
     case WM_CREATE:
@@ -156,13 +153,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ReleaseDC(NULL, dc);
 
             // GDI+ 初期化
-            GdiplusStartupInput gdiSI;
-
-            GdiplusStartup(&gdiToken, &gdiSI, NULL);
-
-            // OffScreen
-            g_offScreenBitmap = new Bitmap(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
-            g_offScreen = new Graphics(g_offScreenBitmap);
+            g_meterDrawer.Init(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
 
             // スレッド準備
             g_pWorker = new CWorker();
@@ -239,7 +230,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // 終了処理
         g_pWorker->Terminate();
 
-        GdiplusShutdown(gdiToken);
+        g_meterDrawer.Shutdown();
 
         RemoveTaskTrayIcon(hWnd);
 
@@ -308,14 +299,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_pIniConfig->Save();
 
             // オフスクリーン再生成
-            if (g_offScreenBitmap != NULL) {
-                delete g_offScreenBitmap;
-            }
-            if (g_offScreen != NULL) {
-                delete g_offScreen;
-            }
-            g_offScreenBitmap = new Bitmap(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
-            g_offScreen = new Graphics(g_offScreenBitmap);
+            g_meterDrawer.Resize(g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
 
         }
         return 0;
@@ -357,16 +341,14 @@ void OnPaint(const HWND &hWnd)
     HDC hdc = BeginPaint(hWnd, &ps);
 
     {
-        Graphics& g = *g_offScreen;
-
         // 描画処理
-        g_meterDrawer.Draw(g, hWnd, g_pWorker);
+        g_meterDrawer.Draw(hWnd, g_pWorker);
 
         //--------------------------------------------------
         // 実画面に転送
         //--------------------------------------------------
         Graphics onScreen(hdc);
-        onScreen.DrawImage(g_offScreenBitmap, 0, 0);
+        onScreen.DrawImage(g_meterDrawer.m_pOffScreenBitmap, 0, 0);
     }
 
     EndPaint(hWnd, &ps);

@@ -18,9 +18,23 @@ struct MeterGuide {
 class MeterDrawer
 {
 public:
-    MeterDrawer();
+    ULONG_PTR   m_gdiToken;
+    Bitmap*     m_pOffScreenBitmap;
+    Graphics*   m_pOffScreenGraphics;
+
+public:
+    MeterDrawer()
+        : m_gdiToken(NULL), m_pOffScreenBitmap(NULL), m_pOffScreenGraphics(NULL) {
+    }
+
     ~MeterDrawer();
-    void Draw(Graphics& g, HWND hWnd, CWorker* pWorker);
+
+    void Init(int width, int height);
+    void Resize(int width, int height);
+    void Shutdown();
+
+    void Draw(HWND hWnd, CWorker* pWorker);
+
 
 private:
     void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
