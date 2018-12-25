@@ -2,12 +2,13 @@
 
 class StopWatch {
 
-public:
+private:
     std::vector<DWORD> durations;
 
     LARGE_INTEGER start, end;
     LARGE_INTEGER freq;
 
+public:
     StopWatch() : freq({})
     {
     }

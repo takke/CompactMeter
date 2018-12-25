@@ -53,6 +53,7 @@ DWORD WINAPI CWorker::ExecThread()
         if (!g_dragging) {
 
             criticalSection.Lock();
+            m_stopWatch.Start();
 
             // Network
             CollectTraffic();
@@ -60,6 +61,7 @@ DWORD WINAPI CWorker::ExecThread()
             // CPU 使用率計測
             CollectCpuUsage(nProcessors, hQuery, hCounter, fntValue);
 
+            m_stopWatch.Stop();
             criticalSection.Unlock();
 
             InvalidateRect(hWnd, NULL, FALSE);

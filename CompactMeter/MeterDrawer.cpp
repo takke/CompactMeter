@@ -264,17 +264,18 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
         // デバッグ用計測器
         DWORD duration1 = m_stopWatch1.GetAverageDurationMicroseconds();
         DWORD duration2 = m_stopWatch2.GetAverageDurationMicroseconds();
+        DWORD durationWorker = pWorker->m_stopWatch.GetAverageDurationMicroseconds();
 
         str.Format(L"i=%d, FPS=%d/%d, "
                    L"n=%d size=%dx%d \n"
                    L"%s %.0f DPI=%d,%d(%.2f)\n"
-                   L"描画=%5.1fms\n転送=%5.1fms \n"
+                   L"描画=%5.1fms\n転送=%5.1fms\n計測=%5.1fms\n"
             ,
             iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps,
             pWorker->traffics.size(), rectWindow.right, rectWindow.bottom,
             (LPCTSTR)strDateTime, size,
             g_dpix, g_dpiy, g_dpiScale,
-            duration1/1000.0, duration2/1000.0
+            duration1/1000.0, duration2/1000.0, durationWorker/1000.0
         );
         g.DrawString(str, str.GetLength(), &fontTahoma, rect, &format, &mainBrush);
     }

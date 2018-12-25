@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "stdafx.h"
+#include "StopWatch.h"
 
 struct Traffic {
     ULONGLONG in;
@@ -17,13 +18,6 @@ struct CpuUsage {
 class CWorker
 {
 public:
-    CWorker(void);
-    ~CWorker(void);
-
-    void SetParams(HWND hWnd);
-    static DWORD WINAPI ThreadFunc(LPVOID lpParameter);
-    void Terminate();
-
     CComCriticalSection criticalSection;
 
     // Network
@@ -31,6 +25,17 @@ public:
 
     // CPU使用率
     std::list<CpuUsage> cpuUsages;
+
+    StopWatch m_stopWatch;
+
+
+public:
+    CWorker(void);
+    ~CWorker(void);
+
+    void SetParams(HWND hWnd);
+    static DWORD WINAPI ThreadFunc(LPVOID lpParameter);
+    void Terminate();
 
     int GetCpuUsage(CpuUsage* out);
 
