@@ -2,9 +2,11 @@
 #include "Worker.h"
 #include "Logger.h"
 #include "IniConfig.h"
+#include "MeterDrawer.h"
 
 extern boolean g_dragging;
 extern IniConfig* g_pIniConfig;
+extern MeterDrawer g_meterDrawer;
 
 CWorker::CWorker(void)
 {
@@ -50,6 +52,8 @@ DWORD WINAPI CWorker::ExecThread()
 
     while (true) {
 
+        DWORD start = GetTickCount();
+
         if (!g_dragging) {
 
             criticalSection.Lock();
@@ -64,10 +68,20 @@ DWORD WINAPI CWorker::ExecThread()
             m_stopWatch.Stop();
             criticalSection.Unlock();
 
-            InvalidateRect(hWnd, NULL, FALSE);
+            // 描画
+//            InvalidateRect(hWnd, NULL, FALSE);
+            HDC hdc = ::GetDC(hWnd);
+            g_meterDrawer.DrawToDC(hdc, hWnd, this);
+            ::ReleaseDC(hWnd, hdc);
         }
+        DWORD elapsed = GetTickCount() - start;
 
-        Sleep(1000 / g_pIniConfig->mFps);
+        int sleep = 1000 / g_pIniConfig->mFps - elapsed;
+
+        if (sleep < 5) {
+            sleep = 5;
+        }
+        Sleep(sleep);
 
 
         // 終了チェック
