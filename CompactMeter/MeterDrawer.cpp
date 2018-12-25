@@ -39,6 +39,28 @@ void MeterDrawer::Shutdown() {
     GdiplusShutdown(m_gdiToken);
 }
 
+void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
+{
+    //--------------------------------------------------
+    // 描画
+    //--------------------------------------------------
+    m_stopWatch1.Start();
+
+    Draw(hWnd, pWorker);
+
+    m_stopWatch1.Stop();
+
+    //--------------------------------------------------
+    // 実画面に転送
+    //--------------------------------------------------
+    m_stopWatch2.Start();
+
+    Graphics onScreen(hdc);
+    onScreen.DrawImage(m_pOffScreenBitmap, 0, 0);
+
+    m_stopWatch2.Stop();
+}
+
 void MeterDrawer::Draw(HWND hWnd, CWorker* pWorker)
 {
     Graphics& g = *m_pOffScreenGraphics;

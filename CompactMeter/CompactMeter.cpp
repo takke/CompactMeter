@@ -340,26 +340,7 @@ void OnPaint(const HWND &hWnd)
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hWnd, &ps);
 
-    {
-        //--------------------------------------------------
-        // 描画
-        //--------------------------------------------------
-        g_meterDrawer.m_stopWatch1.Start();
-
-        g_meterDrawer.Draw(hWnd, g_pWorker);
-
-        g_meterDrawer.m_stopWatch1.Stop();
-
-        //--------------------------------------------------
-        // 実画面に転送
-        //--------------------------------------------------
-        g_meterDrawer.m_stopWatch2.Start();
-
-        Graphics onScreen(hdc);
-        onScreen.DrawImage(g_meterDrawer.m_pOffScreenBitmap, 0, 0);
-
-        g_meterDrawer.m_stopWatch2.Stop();
-    }
+    g_meterDrawer.DrawToDC(hdc, hWnd, g_pWorker);
 
     EndPaint(hWnd, &ps);
 }

@@ -19,7 +19,7 @@ struct MeterGuide {
 
 class MeterDrawer
 {
-public:
+private:
     ULONG_PTR   m_gdiToken;
     Bitmap*     m_pOffScreenBitmap;
     Graphics*   m_pOffScreenGraphics;
@@ -40,10 +40,10 @@ public:
     void Resize(int width, int height);
     void Shutdown();
 
-    void Draw(HWND hWnd, CWorker* pWorker);
-
+    void DrawToDC(HDC hdc, HWND hWnd, CWorker* pWorker);
 
 private:
+    void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
     void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 
