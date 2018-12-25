@@ -251,6 +251,7 @@
     <ClInclude Include="AboutDlg.h" />
     <ClInclude Include="ConfigDlg.h" />
     <ClInclude Include="Const.h" />
+    <ClInclude Include="FpsCounter.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="MeterDrawer.h" />
     <ClInclude Include="IniConfig.h" />

@@ -230,6 +230,9 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
     static int iCalled = 0;
     iCalled++;
 
+    // FPS カウント
+    m_fpsCounter.CountOnDraw();
+
     if (g_pIniConfig->mDebugMode) {
         Font fontTahoma(L"Tahoma", 19 / g_dpiScale * size / 300.0f);
         StringFormat format;
@@ -258,8 +261,8 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
         GetLocalTime(&st);
         strDateTime.Format(L"%d/%02d/%02d %d:%02d:%02d.%03d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 
-        str.Format(L"i=%d, FPS=%d, n=%d size=%dx%d %s %.0f DPI=%d,%d(%.2f)",
-            iCalled, g_pIniConfig->mFps,
+        str.Format(L"i=%d, FPS=%d/%d, n=%d size=%dx%d %s %.0f DPI=%d,%d(%.2f)",
+            iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps,
             pWorker->traffics.size(), rectWindow.right, rectWindow.bottom,
             (LPCTSTR)strDateTime, size,
             g_dpix, g_dpiy, g_dpiScale);

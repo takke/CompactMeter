@@ -2,6 +2,7 @@
 
 #include "Worker.h"
 #include "Const.h"
+#include "FpsCounter.h"
 
 using namespace Gdiplus;
 
@@ -21,6 +22,7 @@ public:
     ULONG_PTR   m_gdiToken;
     Bitmap*     m_pOffScreenBitmap;
     Graphics*   m_pOffScreenGraphics;
+    FpsCounter  m_fpsCounter;
 
 public:
     MeterDrawer()
