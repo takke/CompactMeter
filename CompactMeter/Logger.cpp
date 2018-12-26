@@ -16,7 +16,10 @@ void Logger::Setup()
 
 void Logger::Close()
 {
-    fclose(fp);
+    if (fp != NULL) {
+
+        fclose(fp);
+    }
 }
 
 void Logger::d(LPCWSTR format, ...)
