@@ -660,17 +660,6 @@ void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, co
     DrawLineByAngle(g, &p, center, percent / 100.0f * (PMAX - PMIN) + PMIN, 0, length0 * 0.9f);
 }
 
-// TODO 最終的には Gdiplus::RectF を利用しないようにすること
-inline D2D1_RECT_F ToD2D1Rect(const Gdiplus::RectF& rect) {
-
-    D2D1_RECT_F rect2;
-    rect2.left = rect.X;
-    rect2.top = rect.Y;
-    rect2.right = rect.X + rect.Width;
-    rect2.bottom = rect.Y + rect.Height;
-    return rect2;
-}
-
 void MeterDrawer::DrawD2D(HWND hWnd, CWorker* pWorker)
 {
     //--------------------------------------------------
@@ -694,7 +683,7 @@ void MeterDrawer::DrawD2D(HWND hWnd, CWorker* pWorker)
 
 void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight)
 {
-    Gdiplus::RectF rect;
+    D2D1_RECT_F rect;
 
     CString str;
     // 各ウィジェットのサイズ(width, height)
@@ -735,7 +724,7 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
 
     // 全コアの合計
     {
-        rect = Gdiplus::RectF(0, 0, size, size);
+        rect = D2D1::RectF(0, 0, size, size);
         float percent = cpuUsage.usages[0];
         str.Format(L"CPU (%.0f%%)", percent);
         DrawMeterD2D(rect, percent, str, cpuColors, cpuGuides, 1);
@@ -756,7 +745,7 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
         //printf("ullTotalVirtual  %I64d\n", ms.ullTotalVirtual);      // 仮想メモリの搭載容量
         //printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
 
-        rect = Gdiplus::RectF(size, 0, size, size);
+        rect = D2D1::RectF(size, 0, size + size, size);
         DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
         float percent = ullUsing * 100.0f / ms.ullTotalPhys;
         str.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", percent, ullUsing / 1024 / 1024, ms.ullTotalPhys / 1024 / 1024);
@@ -782,16 +771,14 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
                 if (y + coreSize >= screenHeight) {
                     return;
                 }
-
-                rect = Gdiplus::RectF(x, y, coreSize, coreSize);
             }
             else {
                 // 右側
                 x += coreSize;
-                rect = Gdiplus::RectF(x, y, coreSize, coreSize);
             }
+            rect = D2D1::RectF(x, y, x + coreSize, y + coreSize);
             float percent = cpuUsage.usages[i + 1];
-            //          str.Format(L"Core%d (%.0f%%)", i + 1, percent);
+//          str.Format(L"Core%d (%.0f%%)", i + 1, percent);
             str.Format(L"Core%d", i + 1);
             DrawMeterD2D(rect, percent, str, cpuColors, cpuGuides, 1.4f);
         }
@@ -839,14 +826,14 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
     };
 
     // Up(KB単位)
-    rect = Gdiplus::RectF(0, y, size, size);
+    rect = D2D1::RectF(0, y, size, y + size);
     percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficBytes);
     percent = percent < 0.0f ? 0.0f : percent;
     str.Format(L"▲ %.1f KB/s", outb);
     DrawMeterD2D(rect, percent, str, netColors, netGuides, 1);
 
     // Down(KB単位)
-    rect = Gdiplus::RectF(size, y, size, size);
+    rect = D2D1::RectF(size, y, size + size, y + size);
     percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficBytes);
     percent = percent < 0.0f ? 0.0f : percent;
     str.Format(L"▼ %.1f KB/s", inb);
@@ -901,9 +888,9 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
  *
  * colors, guideLines の最後は必ず percent=0.0 にすること
  */
-void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale)
+void MeterDrawer::DrawMeterD2D(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale)
 {
-    auto size = rect.Width;
+    auto size = rect.right - rect.left;
 
     if (percent < 0.0f) {
         percent = 0.0f;
@@ -932,13 +919,14 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
 
         m_pBrush->SetColor(D2D1::ColorF(0x404040));
         
-        m_pRenderTarget->DrawRectangle(ToD2D1Rect(rect), m_pBrush);
+        m_pRenderTarget->DrawRectangle(rect, m_pBrush);
     }
 
     float margin = size / 50;
-    rect.Offset(margin, margin);
-    rect.Width -= margin * 2;
-    rect.Height -= margin * 2;
+    rect.left += margin;
+    rect.top += margin;
+    rect.right -= margin;
+    rect.bottom -= margin;
 
     //--------------------------------------------------
     // ラベル
@@ -948,20 +936,23 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
     m_pBrush->SetColor(color);
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
     m_pRenderTarget->DrawText(str, wcslen(str), m_pTextFormat2,
-        ToD2D1Rect(rect), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
+        rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
         DWRITE_MEASURING_MODE_NATURAL);
 
 
-    rect.Offset(0, size / 5.0f);
+    rect.top += size / 5.0f;
+    rect.bottom += size / 5.0f;
 
     //--------------------------------------------------
     // メーター描画
     //--------------------------------------------------
 
-    float length0 = rect.Width / 2;
+    float mw = rect.right - rect.left;
+    float length0 = mw / 2;
+
 
     // 外枠
-    Gdiplus::PointF center(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+    Gdiplus::PointF center(rect.left + mw / 2, rect.top + mw / 2);
 
     {
         D2D1::Matrix3x2F matrix1 =

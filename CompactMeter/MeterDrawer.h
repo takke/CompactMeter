@@ -107,7 +107,7 @@ private:
 
     void DrawD2D(HWND hWnd, CWorker* pWorker);
     void DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-    void DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale);
+    void DrawMeterD2D(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale);
 
     void DrawLineByAngle(Gdiplus::PointF &center, float angle, float length1, float length2, float strokeWidth);
 
