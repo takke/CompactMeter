@@ -4,6 +4,6 @@ REM
 REM 起動しているプロセスがない場合もエラーとならないように本バッチファイルでラップする
 REM
 
-taskkill /F /IM CompactMeter.exe
+taskkill /IM CompactMeter.exe
 
 exit /b 0
