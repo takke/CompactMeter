@@ -5,22 +5,11 @@
 #include "FpsCounter.h"
 #include "StopWatch.h"
 
-using namespace Gdiplus;
-
 struct MeterColor {
-    float percent;
-    Color color;
-};
-struct MeterGuide {
-    float percent;
-    Color color;
-    LPCWSTR text;
-};
-struct MeterColorD2D {
     float percent;
     D2D1::ColorF color;
 };
-struct MeterGuideD2D {
+struct MeterGuide {
     float percent;
     D2D1::ColorF color;
     LPCWSTR text;
@@ -98,9 +87,9 @@ public:
 private:
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-    void DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale);
+    void DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 
-    void DrawLineByAngle(Gdiplus::PointF &center, float angle, float length1, float length2, float strokeWidth);
+    void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
 
     inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
     {

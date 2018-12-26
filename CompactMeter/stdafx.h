@@ -23,9 +23,6 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #pragma comment(lib, "Version.lib")
 
-#include <Gdiplus.h>
-#pragma comment(lib, "Gdiplus.lib")
-
 #include <d2d1.h>
 #include <d2d1helper.h>
 #include <dwrite.h>

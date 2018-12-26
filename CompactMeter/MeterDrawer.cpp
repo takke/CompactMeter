@@ -288,13 +288,13 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // CPU+Memory タコメーター描画
     //--------------------------------------------------
-    static MeterColorD2D cpuColors[] = {
+    static MeterColor cpuColors[] = {
         { 90.0, D2D1::ColorF(0xFF4040) },
         { 80.0, D2D1::ColorF(0xFF8040) },
         { 70.0, D2D1::ColorF(0xC0C040) },
         {  0.0, D2D1::ColorF(0xC0C0C0) }
     };
-    static MeterGuideD2D cpuGuides[] = {
+    static MeterGuide cpuGuides[] = {
         { 100.0, D2D1::ColorF(0xFF4040), L"" },
         {  90.0, D2D1::ColorF(0xFF4040), L"" },
         {  80.0, D2D1::ColorF(0xFF4040), L"" },
@@ -401,13 +401,13 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     inb /= 1000;
     outb /= 1000;
 
-    MeterColorD2D netColors[] = {
+    MeterColor netColors[] = {
         { KbToPercent(1000, maxTrafficBytes), D2D1::ColorF(0xFF4040) },
         { KbToPercent( 100, maxTrafficBytes), D2D1::ColorF(0XFF8040) },
         { KbToPercent(  10, maxTrafficBytes), D2D1::ColorF(0xC0C040) },
         {                                0.0, D2D1::ColorF(0xC0C0C0) }
     };
-    MeterGuideD2D netGuides[] = {
+    MeterGuide netGuides[] = {
         { KbToPercent(1000000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1G"   },
         { KbToPercent( 100000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"100M" },
         { KbToPercent(  10000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"10M"  },
@@ -478,7 +478,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
  *
  * colors, guideLines の最後は必ず percent=0.0 にすること
  */
-void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale)
+void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale)
 {
     auto size = rect.right - rect.left;
 
@@ -542,7 +542,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
 
 
     // 外枠
-    Gdiplus::PointF center(rect.left + mw / 2, rect.top + mw / 2);
+    D2D1_POINT_2F center = { rect.left + mw / 2, rect.top + mw / 2 };
 
     {
         D2D1::Matrix3x2F matrix1 =
@@ -550,7 +550,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
             D2D1::Matrix3x2F::Scale({ length0 / 100.0f, length0 / 100.0f })
             *
             // 中心点に移動する
-            D2D1::Matrix3x2F::Translation(center.X, center.Y);
+            D2D1::Matrix3x2F::Translation(center.x, center.y);
 
         m_pRenderTarget->SetTransform(matrix1);
         m_pBrush->SetColor(color);
@@ -578,17 +578,26 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
             float w = length0 / 3;
             float h = length0 / 5;
             float length = length0 * 0.72f;
-            Gdiplus::RectF rect1(center.X - length * cosf(rad), center.Y - length * sinf(rad), w, h);
-            rect1.Offset(-w / 2, -h / 2);
+
+            D2D1_RECT_F rect1 = { 
+                center.x - length * cosf(rad),
+                center.y - length * sinf(rad), 
+                center.x - length * cosf(rad) + w,
+                center.y - length * sinf(rad) + h };
+
+            rect1.left -= w / 2;
+            rect1.right -= w / 2;
+            rect1.top -= h / 2;
+            rect1.bottom -= h / 2;
 
             m_pBrush->SetColor(guideLines[i].color);
             m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 
             IDWriteTextLayout* pTextLayout = NULL;
-            if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, wcslen(text), m_pTextFormat3, rect1.Width, rect1.Height, &pTextLayout))) {
+            if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, wcslen(text), m_pTextFormat3, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
 
                 pTextLayout->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-                m_pRenderTarget->DrawTextLayout(D2D1::Point2F(rect1.X, rect1.Y), pTextLayout, m_pBrush);
+                m_pRenderTarget->DrawTextLayout(D2D1::Point2F(rect1.left, rect1.top), pTextLayout, m_pBrush);
 
                 SafeRelease(&pTextLayout);
             }
@@ -605,12 +614,12 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
     DrawLineByAngle(center, angle, 0, length0 * 0.9f, strokeWidth);
 }
 
-void MeterDrawer::DrawLineByAngle(Gdiplus::PointF &center, float angle, float length1, float length2, float strokeWidth)
+void MeterDrawer::DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth)
 {
     m_pRenderTarget->SetTransform(
         D2D1::Matrix3x2F::Rotation(angle)
         *
-        D2D1::Matrix3x2F::Translation(center.X, center.Y)
+        D2D1::Matrix3x2F::Translation(center.x, center.y)
     );
     m_pRenderTarget->DrawLine(
         D2D1::Point2F(-length1, 0),
