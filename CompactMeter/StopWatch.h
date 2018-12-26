@@ -35,6 +35,11 @@ public:
     }
 
     DWORD GetAverageDurationMicroseconds() {
+
+        if (durations.size() == 0) {
+            return 0;
+        }
+
         DWORD a = 0;
 
         for (const auto& v : durations) {
