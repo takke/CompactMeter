@@ -7,6 +7,12 @@ Direct2D 対応なのでCPU負荷を低く抑えています。
 ![SS](image/2018-12-19_16h24_46.gif)
 
 
+## ダウンロード
+
+- [Releases](https://github.com/takke/CompactMeter/releases) からダウンロードできます。
+- [AppVeyorのartifacts](https://ci.appveyor.com/project/takke/compactmeter/build/artifacts) から最新版(スナップショット)をダウンロードできます。
+
+
 ## 対応OS
 
 Windows7, Windows8.1, Windows10
@@ -23,9 +29,3 @@ Windows7, Windows8.1, Windows10
 | Tキー | 「常に最上位に表示」切替 |
 | Bキー | 枠線表示の切替 |
 | Dキー | デバッグモード切替 |
-
-
-## ダウンロード
-
-- まだ正式リリースしていません。
-- [AppVeyorのartifacts](https://ci.appveyor.com/project/takke/compactmeter/build/artifacts) から最新版(スナップショット)をダウンロードできます。
