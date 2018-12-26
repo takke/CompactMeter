@@ -29,9 +29,6 @@ struct MeterGuideD2D {
 class MeterDrawer
 {
 private:
-    ULONG_PTR   m_gdiToken;
-    Bitmap*     m_pOffScreenBitmap;
-    Graphics*   m_pOffScreenGraphics;
     FpsCounter  m_fpsCounter;
 
     const float PMIN = -30;
@@ -39,7 +36,6 @@ private:
 
     // デバッグ用計測器
     StopWatch   m_stopWatch1;
-    StopWatch   m_stopWatch2;
 
     // Direct2D(DeviceDependent)
     ID2D1HwndRenderTarget*       m_pRenderTarget;
@@ -47,18 +43,17 @@ private:
 
     // Direct2D(DeviceIndependent)
     ID2D1Factory*                m_pD2DFactory;
-    IDWriteTextFormat*           m_pTextFormat;
-    IDWriteTextFormat*           m_pTextFormat2;
-    IDWriteTextFormat*           m_pTextFormat3;
-    ID2D1PathGeometry*           m_pPathGeometry;
+    IDWriteTextFormat*           m_pTextFormat;     // デバッグログ表示用
+    IDWriteTextFormat*           m_pTextFormat2;    // メーターの文字用
+    IDWriteTextFormat*           m_pTextFormat3;    // メーターのラベル用
+    ID2D1PathGeometry*           m_pPathGeometry;   // メーターの枠
 
     // DirectWrite(DeviceIndependent)
     IDWriteFactory*              m_pDWFactory;
 
 public:
     MeterDrawer()
-        : m_gdiToken(NULL), m_pOffScreenBitmap(NULL), m_pOffScreenGraphics(NULL)
-        , m_pRenderTarget(NULL)
+        : m_pRenderTarget(NULL)
         , m_pBrush(NULL)
         , m_pD2DFactory(NULL)
         , m_pTextFormat(NULL)
@@ -101,30 +96,15 @@ public:
     }
 
 private:
-    void Draw(Graphics& g, HWND hWnd, CWorker* pWorker);
-    void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-    void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
-
-    void DrawD2D(HWND hWnd, CWorker* pWorker);
-    void DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-    void DrawMeterD2D(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale);
+    void Draw(HWND hWnd, CWorker* pWorker);
+    void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
+    void DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale);
 
     void DrawLineByAngle(Gdiplus::PointF &center, float angle, float length1, float length2, float strokeWidth);
 
     inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
     {
         return (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
-    }
-
-    inline void DrawLineByAngle(Graphics& g, Pen* p, Gdiplus::PointF& center, float angle, float length1, float length2)
-    {
-        float rad = PI * angle / 180;
-        float c1 = cosf(rad);
-        float s1 = sinf(rad);
-        g.DrawLine(p,
-            center.X - (length1 == 0 ? 0 : length1 * c1), center.Y - (length1 == 0 ? 0 : length1 * s1),
-            center.X - length2 * c1, center.Y - length2 * s1
-        );
     }
 
 };

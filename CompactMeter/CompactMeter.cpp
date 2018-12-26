@@ -245,10 +245,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PostMessage(hWnd, WM_CLOSE, 0, 0);
             return 0L;
 
-        case '2':
-            g_pIniConfig->mDirect2DMode = !g_pIniConfig->mDirect2DMode;
-            return 0L;
-
         case 'B':
             // Toggle Border
             ToggleBorder();
