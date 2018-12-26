@@ -355,7 +355,7 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
     RECT rt;
     GetClientRect(hWnd, &rt);
 
-    const float BORDER_SIZE = 8 * g_dpiScale;
+    const float BORDER_SIZE = 16 * g_dpiScale;
     const float width = (float)rt.right;
     const float height = (float)rt.bottom;
 
