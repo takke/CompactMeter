@@ -327,6 +327,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_dpix = LOWORD(wParam);
         g_dpiy = HIWORD(wParam);
         g_dpiScale = g_dpix / 96.0f;
+        g_meterDrawer.SetDpi((float)g_dpix, (float)g_dpiy);
         return 0;
 
     default:

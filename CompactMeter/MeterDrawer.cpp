@@ -229,7 +229,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
     CString str;
     // 各ウィジェットのサイズ(width, height)
-    float size = screenWidth / 2.0f;
+    float size = screenWidth / 2.0f / g_dpiScale;
 
     // 試しにDPIを設定してみる
 //    m_pRenderTarget->SetDpi(96.0f, 96.0f);
@@ -407,13 +407,15 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         str.Format(L"i=%d, FPS=%d/%d, "
             L"n=%d size=%.0fx%.0f \n"
             L"%s \n"
-            L"box=%.0f DPI=%d,%d(%.2f)\n"
+            L"box=%.0f\n"
+            L"DPI=%d,%d(%.2f)\n"
             L"描画=%5.1fms, フォント生成=%5.3fms\n"
             L"計測=%5.1fms\n"
             , iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps
             , pWorker->traffics.size(), screenWidth, screenHeight
             , (LPCTSTR)strDateTime
-            , size, g_dpix, g_dpiy, g_dpiScale
+            , size
+            , g_dpix, g_dpiy, g_dpiScale
             , duration1 / 1000.0
             , duration2 / 1000.0
             , durationWorker / 1000.0
@@ -425,7 +427,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         // TextFormat
         IDWriteTextFormat* pTextFormat;
         m_stopWatch2.Start();
-        if (CreateMyTextFormat(12.0f, &pTextFormat)) {
+        if (CreateMyTextFormat(12.0f / g_dpiScale, &pTextFormat)) {
             m_stopWatch2.Stop();
 
             m_pRenderTarget->DrawText(str, str.GetLength(), pTextFormat,
@@ -485,7 +487,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
     //--------------------------------------------------
     // ラベル
     //--------------------------------------------------
-    float scale = 1 / g_dpiScale * size / 150.0f * fontScale;
+    float scale = 1 * size / 150.0f * fontScale;
 
     m_pBrush->SetColor(color);
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());

@@ -57,6 +57,9 @@ public:
 
     void Init(HWND hWnd, int width, int height);
     void Resize(HWND hWnd, int width, int height);
+    void SetDpi(float dpix, float dpiy) {
+        m_pRenderTarget->SetDpi(dpix, dpiy);
+    }
     void Shutdown();
 
     void DrawToDC(HDC hdc, HWND hWnd, CWorker* pWorker);
