@@ -28,9 +28,9 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include <d2d1.h>
 #include <d2d1helper.h>
-//#include <dwrite.h>
-//#include <wincodec.h>
-#pragma comment(lib, "D2d1.lib")
+#include <dwrite.h>
+#pragma comment(lib, "d2d1.lib")
+#pragma comment(lib, "dwrite.lib")
 
 #include <pdh.h>    
 #pragma comment(lib, "pdh.lib")

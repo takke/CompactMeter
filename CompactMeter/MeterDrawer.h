@@ -33,20 +33,25 @@ private:
     ID2D1Factory*                m_pD2DFactory;
     ID2D1HwndRenderTarget*       m_pRenderTarget;
     ID2D1GdiInteropRenderTarget* m_pInteropRenderTarget;
-    ID2D1SolidColorBrush*        m_pBlackBrush;
+    ID2D1SolidColorBrush*        m_pBrush;
+    
+    // DirectWrite
+    IDWriteFactory*              m_pDWFactory;
 
 public:
     MeterDrawer()
         : m_gdiToken(NULL), m_pOffScreenBitmap(NULL), m_pOffScreenGraphics(NULL)
-        , m_pD2DFactory(NULL), m_pRenderTarget(NULL), m_pBlackBrush(NULL), m_pInteropRenderTarget(NULL)
+        , m_pD2DFactory(NULL), m_pRenderTarget(NULL), m_pBrush(NULL), m_pInteropRenderTarget(NULL)
+        , m_pDWFactory(NULL)
     {
     }
 
     ~MeterDrawer()
     {
+        SafeRelease(&m_pDWFactory);
         SafeRelease(&m_pD2DFactory);
         SafeRelease(&m_pRenderTarget);
-        SafeRelease(&m_pBlackBrush);
+        SafeRelease(&m_pBrush);
         SafeRelease(&m_pInteropRenderTarget);
     }
 
@@ -56,13 +61,19 @@ public:
 
     void DrawToDC(HDC hdc, HWND hWnd, CWorker* pWorker);
 
+    HRESULT CreateDeviceIndependentResources();
     HRESULT CreateDeviceResources(HWND hWnd, int width, int height);
     void DiscardDeviceResources();
 
 private:
     void Draw(Graphics& g, HWND hWnd, CWorker* pWorker);
+    void DrawD2D(HWND hWnd, CWorker* pWorker);
+
     void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
     void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
+
+    void DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
+    void DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 
     inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
     {
