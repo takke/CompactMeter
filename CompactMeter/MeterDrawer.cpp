@@ -70,57 +70,20 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
     {
         if (g_pIniConfig->mDirect2DMode) {
 
-            boolean fullDirect2DMode = true;
+            //--------------------------------------------------
+            // 描画
+            //--------------------------------------------------
+            m_stopWatch1.Start();
 
-            if (fullDirect2DMode) {
-                // レンダリングも全て Direct2D で行う
+            m_pRenderTarget->BeginDraw();
+            m_stopWatch1.Stop();
 
-                //--------------------------------------------------
-                // 描画
-                //--------------------------------------------------
-                m_stopWatch1.Start();
+            m_stopWatch2.Start();
+            DrawD2D(hWnd, pWorker);
 
-                m_pRenderTarget->BeginDraw();
-                m_stopWatch1.Stop();
+            m_pRenderTarget->EndDraw();
 
-                m_stopWatch2.Start();
-                DrawD2D(hWnd, pWorker);
-
-                m_pRenderTarget->EndDraw();
-
-                m_stopWatch2.Stop();
-            }
-            else {
-
-                // TODO 廃止予定
-
-                //--------------------------------------------------
-                // 描画
-                //--------------------------------------------------
-                m_stopWatch1.Start();
-
-                Draw(*m_pOffScreenGraphics, hWnd, pWorker);
-
-                m_stopWatch1.Stop();
-
-                //--------------------------------------------------
-                // Direct2D に転送
-                //--------------------------------------------------
-                m_stopWatch2.Start();
-
-                m_pRenderTarget->BeginDraw();
-
-                HDC hdc;
-                m_pInteropRenderTarget->GetDC(D2D1_DC_INITIALIZE_MODE_COPY, &hdc);
-
-                Graphics onScreen(hdc);
-                onScreen.DrawImage(m_pOffScreenBitmap, 0, 0);
-
-                m_pInteropRenderTarget->ReleaseDC(&rc);
-                m_pRenderTarget->EndDraw();
-
-                m_stopWatch2.Stop();
-            }
+            m_stopWatch2.Stop();
 
         } else {
 
@@ -160,13 +123,35 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 
 HRESULT MeterDrawer::CreateDeviceIndependentResources()
 {
-    // Create D2D factory
-    D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2DFactory);
+    HRESULT hr;
 
-    HRESULT hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&m_pDWFactory));
+    // Direct2D factory
+    hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2DFactory);
     if (FAILED(hr)) {
+        Logger::d(L"cannot init D2D1Factory");
+        return hr;
+    }
 
-        Logger::d(L"cannot init DWriteCreateFactory");
+    // DirectWrite factory
+    hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&m_pDWFactory));
+    if (FAILED(hr)) {
+        Logger::d(L"cannot init DWriteFactory");
+        return hr;
+    }
+
+    // TODO リサイズ時に作り直すこと
+    hr = m_pDWFactory->CreateTextFormat(
+        L"ＭＳゴシック"
+        , NULL
+        , DWRITE_FONT_WEIGHT_NORMAL
+        , DWRITE_FONT_STYLE_NORMAL
+        , DWRITE_FONT_STRETCH_NORMAL
+        , 12
+        , L""
+        , &m_pTextFormat
+    );
+    if (FAILED(hr)) {
+        Logger::d(L"cannot init TextFormat");
         return hr;
     }
 
@@ -183,48 +168,30 @@ HRESULT MeterDrawer::CreateDeviceResources(HWND hWnd, int width, int height)
         m_pD2DFactory->GetDesktopDpi(&dpiX, &dpiY);
         Logger::d(L"DPI: %.2f,%.2f", dpiX, dpiY);
 
-        const D2D1_PIXEL_FORMAT format =
-            D2D1::PixelFormat(
-                DXGI_FORMAT_B8G8R8A8_UNORM,
-                D2D1_ALPHA_MODE_PREMULTIPLIED);
-
-        const D2D1_RENDER_TARGET_PROPERTIES properties =
-            D2D1::RenderTargetProperties(
-                D2D1_RENDER_TARGET_TYPE_DEFAULT,
-                format,
-                dpiX,
-                dpiY,
-                D2D1_RENDER_TARGET_USAGE_GDI_COMPATIBLE);
-
         auto ScreenSize = D2D1::SizeU(width, height);
 
-        HRESULT hr = m_pD2DFactory->CreateHwndRenderTarget(
-            properties,
+        hr = m_pD2DFactory->CreateHwndRenderTarget(
+            D2D1::RenderTargetProperties(),
             D2D1::HwndRenderTargetProperties(hWnd, ScreenSize),
             &m_pRenderTarget
         );
-
-        if (SUCCEEDED(hr)) {
-            hr = m_pRenderTarget->QueryInterface(
-                __uuidof(ID2D1GdiInteropRenderTarget),
-                (void**)&m_pInteropRenderTarget
-            );
+        if (FAILED(hr)) {
+            Logger::d(L"cannot init HwndRenderTarget");
+            return hr;
         }
 
         hr = m_pRenderTarget->CreateSolidColorBrush(
             D2D1::ColorF(D2D1::ColorF::White),
             &m_pBrush
         );
+        if (FAILED(hr)) {
+            Logger::d(L"cannot init SolidColorBrush");
+            return hr;
+        }
+
     }
 
     return hr;
-}
-
-void MeterDrawer::DiscardDeviceResources()
-{
-    SafeRelease(&m_pRenderTarget);
-    SafeRelease(&m_pBrush);
-    SafeRelease(&m_pInteropRenderTarget);
 }
 
 void MeterDrawer::Draw(Graphics& g, HWND hWnd, CWorker* pWorker)
@@ -255,7 +222,7 @@ void MeterDrawer::DrawD2D(HWND hWnd, CWorker* pWorker)
     // Draw
     //--------------------------------------------------
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-    m_pRenderTarget->Clear(D2D1::ColorF(10/255.0f, 10/255.0f, 10/255.0f));
+    m_pRenderTarget->Clear(D2D1::ColorF(0x0A0A0A));
 
     float screenWidth = (float)g_pIniConfig->mWindowWidth;
     float screenHeight = (float)g_pIniConfig->mWindowHeight;
@@ -665,9 +632,6 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
 
     if (g_pIniConfig->mDebugMode) {
 
-        // 開始 Y 座標
-        rect = Gdiplus::RectF(0, y, screenWidth, screenHeight - y);
-
         CString strDateTime;
         SYSTEMTIME st;
         GetLocalTime(&st);
@@ -684,35 +648,19 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
             L"box=%.0f DPI=%d,%d(%.2f)\n"
             L"描画=%5.1fms\n転送=%5.1fms\n計測=%5.1fms\n"
             L"RenderMode=%s\n"
-            L"Y=%.0f"
             , iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps
             , pWorker->traffics.size(), rectWindow.right, rectWindow.bottom
             , (LPCTSTR)strDateTime
             , size, g_dpix, g_dpiy, g_dpiScale
             , duration1 / 1000.0, duration2 / 1000.0, durationWorker / 1000.0
             , g_pIniConfig->mDirect2DMode ? L"Direct2D" : L"GDI"
-            , rect.Y
         );
 
-        IDWriteTextFormat* pTextFormat = NULL;
-        m_pDWFactory->CreateTextFormat(
-            L"ＭＳゴシック"
-            , NULL
-            , DWRITE_FONT_WEIGHT_NORMAL
-            , DWRITE_FONT_STYLE_NORMAL
-            , DWRITE_FONT_STRETCH_NORMAL
-            , 12
-            , L""
-            , &pTextFormat
-        );
-
-        m_pBrush->SetColor(D2D1::ColorF(192 / 255.0f, 192 / 255.0f, 192 / 255.0f));
+        m_pBrush->SetColor(D2D1::ColorF(0xC0C0C0));
         m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-        m_pRenderTarget->DrawText(str, str.GetLength(), pTextFormat,
-            &D2D1::RectF(rect.X, rect.Y, rect.Width, screenHeight), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
+        m_pRenderTarget->DrawText(str, str.GetLength(), m_pTextFormat,
+            &D2D1::RectF(0, y, screenWidth, screenHeight), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
             DWRITE_MEASURING_MODE_NATURAL);
-
-        SafeRelease(&pTextFormat);
     }
 }
 
@@ -834,6 +782,17 @@ void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, co
     DrawLineByAngle(g, &p, center, percent / 100.0f * (PMAX - PMIN) + PMIN, 0, length0 * 0.9f);
 }
 
+// TODO 最終的には Gdiplus::RectF を利用しないようにすること
+inline D2D1_RECT_F ToD2D1Rect(const Gdiplus::RectF& rect) {
+
+    D2D1_RECT_F rect2;
+    rect2.left = rect.X;
+    rect2.top = rect.Y;
+    rect2.right = rect.X + rect.Width;
+    rect2.bottom = rect.Y + rect.Height;
+    return rect2;
+}
+
 /**
  * メーターを描画する
  *
@@ -869,14 +828,8 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
     if (g_pIniConfig->mDrawBorder) {
 
         m_pBrush->SetColor(D2D1::ColorF(64/255.0f, 64/255.0f, 64/255.0f));
-
-        D2D1_RECT_F rect2;
-        rect2.left = rect.X;
-        rect2.top = rect.Y;
-        rect2.right = rect.X + rect.Width;
-        rect2.bottom = rect.Y + rect.Height;
         
-        m_pRenderTarget->DrawRectangle(ToD2D1Rect(rect2), m_pBrush);
+        m_pRenderTarget->DrawRectangle(ToD2D1Rect(rect), m_pBrush);
     }
 
     float margin = size / 50;

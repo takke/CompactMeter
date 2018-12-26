@@ -29,30 +29,29 @@ private:
     StopWatch   m_stopWatch1;
     StopWatch   m_stopWatch2;
 
-    // Direct2D
-    ID2D1Factory*                m_pD2DFactory;
+    // Direct2D(DeviceDependent)
     ID2D1HwndRenderTarget*       m_pRenderTarget;
-    ID2D1GdiInteropRenderTarget* m_pInteropRenderTarget;
     ID2D1SolidColorBrush*        m_pBrush;
-    
-    // DirectWrite
+
+    // Direct2D(DeviceIndependent)
+    ID2D1Factory*                m_pD2DFactory;
+    IDWriteTextFormat*           m_pTextFormat;
+
+    // DirectWrite(DeviceIndependent)
     IDWriteFactory*              m_pDWFactory;
 
 public:
     MeterDrawer()
         : m_gdiToken(NULL), m_pOffScreenBitmap(NULL), m_pOffScreenGraphics(NULL)
-        , m_pD2DFactory(NULL), m_pRenderTarget(NULL), m_pBrush(NULL), m_pInteropRenderTarget(NULL)
-        , m_pDWFactory(NULL)
+        , m_pRenderTarget(NULL), m_pBrush(NULL)
+        , m_pD2DFactory(NULL), m_pDWFactory(NULL), m_pTextFormat(NULL)
     {
     }
 
     ~MeterDrawer()
     {
-        SafeRelease(&m_pDWFactory);
-        SafeRelease(&m_pD2DFactory);
-        SafeRelease(&m_pRenderTarget);
-        SafeRelease(&m_pBrush);
-        SafeRelease(&m_pInteropRenderTarget);
+        DiscardDeviceIndependentResources();
+        DiscardDeviceResources();
     }
 
     void Init(HWND hWnd, int width, int height);
@@ -63,7 +62,19 @@ public:
 
     HRESULT CreateDeviceIndependentResources();
     HRESULT CreateDeviceResources(HWND hWnd, int width, int height);
-    void DiscardDeviceResources();
+
+    void DiscardDeviceIndependentResources()
+    {
+        SafeRelease(&m_pD2DFactory);
+        SafeRelease(&m_pDWFactory);
+        SafeRelease(&m_pTextFormat);
+    }
+
+    void DiscardDeviceResources()
+    {
+        SafeRelease(&m_pRenderTarget);
+        SafeRelease(&m_pBrush);
+    }
 
 private:
     void Draw(Graphics& g, HWND hWnd, CWorker* pWorker);
