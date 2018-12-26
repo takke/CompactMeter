@@ -25,6 +25,9 @@ private:
     Graphics*   m_pOffScreenGraphics;
     FpsCounter  m_fpsCounter;
 
+    const float PMIN = -30;
+    const float PMAX = 180 - PMIN;
+
     // デバッグ用計測器
     StopWatch   m_stopWatch1;
     StopWatch   m_stopWatch2;
@@ -36,6 +39,9 @@ private:
     // Direct2D(DeviceIndependent)
     ID2D1Factory*                m_pD2DFactory;
     IDWriteTextFormat*           m_pTextFormat;
+    IDWriteTextFormat*           m_pTextFormat2;
+    IDWriteTextFormat*           m_pTextFormat3;
+    ID2D1PathGeometry*           m_pPathGeometry;
 
     // DirectWrite(DeviceIndependent)
     IDWriteFactory*              m_pDWFactory;
@@ -43,8 +49,14 @@ private:
 public:
     MeterDrawer()
         : m_gdiToken(NULL), m_pOffScreenBitmap(NULL), m_pOffScreenGraphics(NULL)
-        , m_pRenderTarget(NULL), m_pBrush(NULL)
-        , m_pD2DFactory(NULL), m_pDWFactory(NULL), m_pTextFormat(NULL)
+        , m_pRenderTarget(NULL)
+        , m_pBrush(NULL)
+        , m_pD2DFactory(NULL)
+        , m_pTextFormat(NULL)
+        , m_pTextFormat2(NULL)
+        , m_pTextFormat3(NULL)
+        , m_pPathGeometry(NULL)
+        , m_pDWFactory(NULL)
     {
     }
 
@@ -68,6 +80,9 @@ public:
         SafeRelease(&m_pD2DFactory);
         SafeRelease(&m_pDWFactory);
         SafeRelease(&m_pTextFormat);
+        SafeRelease(&m_pTextFormat2);
+        SafeRelease(&m_pTextFormat3);
+        SafeRelease(&m_pPathGeometry);
     }
 
     void DiscardDeviceResources()
@@ -84,6 +99,8 @@ private:
     void DrawD2D(HWND hWnd, CWorker* pWorker);
     void DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
     void DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
+
+    void DrawLineByAngle(Gdiplus::PointF &center, float angle, float length1, float length2, float strokeWidth);
 
     inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
     {

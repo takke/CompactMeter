@@ -140,6 +140,7 @@ HRESULT MeterDrawer::CreateDeviceIndependentResources()
     }
 
     // TODO リサイズ時に作り直すこと
+    // TextFormat
     hr = m_pDWFactory->CreateTextFormat(
         L"ＭＳゴシック"
         , NULL
@@ -155,6 +156,114 @@ HRESULT MeterDrawer::CreateDeviceIndependentResources()
         return hr;
     }
 
+    // TextFormat
+    hr = m_pDWFactory->CreateTextFormat(
+        L"ＭＳゴシック"
+        , NULL
+        , DWRITE_FONT_WEIGHT_NORMAL
+        , DWRITE_FONT_STYLE_NORMAL
+        , DWRITE_FONT_STRETCH_NORMAL
+        , 10
+        , L""
+        , &m_pTextFormat2
+    );
+    if (FAILED(hr)) {
+        Logger::d(L"cannot init TextFormat");
+        return hr;
+    }
+
+    // TextFormat
+    hr = m_pDWFactory->CreateTextFormat(
+        L"ＭＳゴシック"
+        , NULL
+        , DWRITE_FONT_WEIGHT_NORMAL
+        , DWRITE_FONT_STYLE_NORMAL
+        , DWRITE_FONT_STRETCH_NORMAL
+        , 8
+        , L""
+        , &m_pTextFormat3
+    );
+    if (FAILED(hr)) {
+        Logger::d(L"cannot init TextFormat");
+        return hr;
+    }
+
+    // PathGeometry
+    // (0, 0) を原点に 100 のサイズで描画
+    {
+        HRESULT hr = m_pD2DFactory->CreatePathGeometry(&m_pPathGeometry);
+
+        if (SUCCEEDED(hr))
+        {
+            ID2D1GeometrySink *pSink = NULL;
+
+            // Write to the path geometry using the geometry sink.
+            hr = m_pPathGeometry->Open(&pSink);
+
+            if (SUCCEEDED(hr))
+            {
+                pSink->BeginFigure(
+                    D2D1::Point2F(0, 0),
+                    D2D1_FIGURE_BEGIN_FILLED
+                );
+
+                // 左下、右下の角度
+                float length0 = 100.0;
+
+                float x1 = -length0 * cosf(PI * PMIN / 180);
+                float y1 = -length0 * sinf(PI * PMIN / 180);
+                float x2 = -length0 * cosf(PI * PMAX / 180);
+                float y2 = -length0 * sinf(PI * PMAX / 180);
+
+
+                pSink->AddLine(D2D1::Point2F(x1, y1));
+
+                pSink->AddArc(
+                    D2D1::ArcSegment(
+                        D2D1::Point2F(-length0, 0), // end point
+                        D2D1::SizeF(length0, length0),
+                        0, // rotation angle
+                        D2D1_SWEEP_DIRECTION_CLOCKWISE,
+                        D2D1_ARC_SIZE_SMALL
+                    ));
+
+                pSink->AddArc(
+                    D2D1::ArcSegment(
+                        D2D1::Point2F(0, -length0), // end point
+                        D2D1::SizeF(length0, length0),
+                        0, // rotation angle
+                        D2D1_SWEEP_DIRECTION_CLOCKWISE,
+                        D2D1_ARC_SIZE_SMALL
+                    ));
+
+                pSink->AddArc(
+                    D2D1::ArcSegment(
+                        D2D1::Point2F(length0, 0), // end point
+                        D2D1::SizeF(length0, length0),
+                        0, // rotation angle
+                        D2D1_SWEEP_DIRECTION_CLOCKWISE,
+                        D2D1_ARC_SIZE_SMALL
+                    ));
+
+                pSink->AddArc(
+                    D2D1::ArcSegment(
+                        D2D1::Point2F(x2, y2), // end point
+                        D2D1::SizeF(length0, length0),
+                        0, // rotation angle
+                        D2D1_SWEEP_DIRECTION_CLOCKWISE,
+                        D2D1_ARC_SIZE_SMALL
+                    ));
+
+                pSink->AddLine(D2D1::Point2F(0, 0));
+
+                pSink->EndFigure(D2D1_FIGURE_END_OPEN);
+
+                hr = pSink->Close();
+            }
+            SafeRelease(&pSink);
+        }
+    }
+
     return hr;
 }
 
@@ -168,11 +277,10 @@ HRESULT MeterDrawer::CreateDeviceResources(HWND hWnd, int width, int height)
         m_pD2DFactory->GetDesktopDpi(&dpiX, &dpiY);
         Logger::d(L"DPI: %.2f,%.2f", dpiX, dpiY);
 
-        auto ScreenSize = D2D1::SizeU(width, height);
-
+        // RenderTarget
         hr = m_pD2DFactory->CreateHwndRenderTarget(
             D2D1::RenderTargetProperties(),
-            D2D1::HwndRenderTargetProperties(hWnd, ScreenSize),
+            D2D1::HwndRenderTargetProperties(hWnd, D2D1::SizeU(width, height)),
             &m_pRenderTarget
         );
         if (FAILED(hr)) {
@@ -180,6 +288,7 @@ HRESULT MeterDrawer::CreateDeviceResources(HWND hWnd, int width, int height)
             return hr;
         }
 
+        // Brush
         hr = m_pRenderTarget->CreateSolidColorBrush(
             D2D1::ColorF(D2D1::ColorF::White),
             &m_pBrush
@@ -188,7 +297,6 @@ HRESULT MeterDrawer::CreateDeviceResources(HWND hWnd, int width, int height)
             Logger::d(L"cannot init SolidColorBrush");
             return hr;
         }
-
     }
 
     return hr;
@@ -500,10 +608,6 @@ void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, co
 //  g.SetSmoothingMode(SmoothingModeNone);
     g.SetSmoothingMode(SmoothingModeHighQuality);
 
-    // 左下、右下の角度
-    float PMIN = -30;
-    float PMAX = 180 - PMIN;
-
     // 外枠
     Gdiplus::PointF center(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
     g.DrawArc(&p, rect, -180 + PMIN, PMAX - PMIN);
@@ -791,6 +895,11 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
     }
 }
 
+inline D2D1::ColorF ToD2D1Color(Color color) {
+
+    return D2D1::ColorF(color.GetR() / 255.0f, color.GetG() / 255.0f, color.GetB() / 255.0f);
+}
+
 /**
  * メーターを描画する
  *
@@ -807,10 +916,10 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
         percent = 100.0f;
     }
 
-    Color color;
+    D2D1::ColorF color(0x000000);
     for (int i = 0; ; i++) {
         if (percent >= colors[i].percent) {
-            color = Color(colors[i].color);
+            color = ToD2D1Color(colors[i].color);
             break;
         }
 
@@ -825,7 +934,7 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
     if (g_pIniConfig->mDrawBorder) {
 
-        m_pBrush->SetColor(D2D1::ColorF(64/255.0f, 64/255.0f, 64/255.0f));
+        m_pBrush->SetColor(D2D1::ColorF(0x404040));
         
         m_pRenderTarget->DrawRectangle(ToD2D1Rect(rect), m_pBrush);
     }
@@ -835,18 +944,18 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
     rect.Width -= margin * 2;
     rect.Height -= margin * 2;
 
-    // ペン
-    Pen p(color, 1.2f);
-    SolidBrush mainBrush(color);
-
     //--------------------------------------------------
     // ラベル
     //--------------------------------------------------
     float scale = 1 / g_dpiScale * size / 300.0f * fontScale;
-    Font fontTahoma(L"Tahoma", 19.0f * scale);
-    StringFormat format;
-    format.SetAlignment(StringAlignmentNear);
-//    g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
+
+    m_pBrush->SetColor(color);
+    m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+    m_pRenderTarget->DrawText(str, wcslen(str), m_pTextFormat2,
+        ToD2D1Rect(rect), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
+        DWRITE_MEASURING_MODE_NATURAL);
+
+
     rect.Offset(0, size / 5.0f);
 
     //--------------------------------------------------
@@ -854,145 +963,40 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
     //--------------------------------------------------
 
     // アンチエイリアス
-    m_pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-
-    // 左下、右下の角度
-    float PMIN = -30;
-    float PMAX = 180 - PMIN;
+//    m_pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
     float length0 = rect.Width / 2;
 
     // 外枠
     Gdiplus::PointF center(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-//    g.DrawArc(&p, rect, -180 + PMIN, PMAX - PMIN);
-
-    float x1 = -length0 * cosf(PI * PMIN / 180);
-    float y1 = -length0 * sinf(PI * PMIN / 180);
-    float x2 = -length0 * cosf(PI * PMAX / 180);
-    float y2 = -length0 * sinf(PI * PMAX / 180);
-
 
     {
-        ID2D1PathGeometry* m_pPathGeometry = NULL;
-        ID2D1GeometrySink *pSink = NULL;
-
-        // Create a path geometry.
-        {
-            HRESULT hr = m_pD2DFactory->CreatePathGeometry(&m_pPathGeometry);
-
-            if (SUCCEEDED(hr))
-            {
-                // Write to the path geometry using the geometry sink.
-                hr = m_pPathGeometry->Open(&pSink);
-
-                if (SUCCEEDED(hr))
-                {
-                    pSink->BeginFigure(
-                        D2D1::Point2F(0, 0),
-                        D2D1_FIGURE_BEGIN_FILLED
-                    );
-
-                    pSink->AddLine(D2D1::Point2F(x1, y1));
-
-                    //pSink->AddLine(D2D1::Point2F(-length0, 0));
-
-                    //pSink->AddArc(
-                    //    D2D1::ArcSegment(
-                    //        D2D1::Point2F(0, -length0), // end point
-                    //        D2D1::SizeF(length0, length0),
-                    //        0, // rotation angle
-                    //        D2D1_SWEEP_DIRECTION_CLOCKWISE,
-                    //        D2D1_ARC_SIZE_SMALL
-                    //    ));
-
-                    pSink->AddArc(
-                        D2D1::ArcSegment(
-                            D2D1::Point2F(-length0, 0), // end point
-                            D2D1::SizeF(length0, length0),
-                            0, // rotation angle
-                            D2D1_SWEEP_DIRECTION_CLOCKWISE,
-                            D2D1_ARC_SIZE_SMALL
-                        ));
-
-                    pSink->AddArc(
-                        D2D1::ArcSegment(
-                            D2D1::Point2F(0, -length0), // end point
-                            D2D1::SizeF(length0, length0),
-                            0, // rotation angle
-                            D2D1_SWEEP_DIRECTION_CLOCKWISE,
-                            D2D1_ARC_SIZE_SMALL
-                        ));
-
-                    pSink->AddArc(
-                        D2D1::ArcSegment(
-                            D2D1::Point2F(length0, 0), // end point
-                            D2D1::SizeF(length0, length0),
-                            0, // rotation angle
-                            D2D1_SWEEP_DIRECTION_CLOCKWISE,
-                            D2D1_ARC_SIZE_SMALL
-                        ));
-
-                    pSink->AddArc(
-                        D2D1::ArcSegment(
-                            D2D1::Point2F(x2, y2), // end point
-                            D2D1::SizeF(length0, length0),
-                            0, // rotation angle
-                            D2D1_SWEEP_DIRECTION_CLOCKWISE,
-                            D2D1_ARC_SIZE_SMALL
-                        ));
-
-                    pSink->AddLine(D2D1::Point2F(0, 0));
-
-                    pSink->EndFigure(D2D1_FIGURE_END_OPEN);
-
-                    hr = pSink->Close();
-                }
-                SafeRelease(&pSink);
-            }
-        }
-
         D2D1::Matrix3x2F matrix1 =
+            // サイズ 100 で描画されているので拡縮する
+            D2D1::Matrix3x2F::Scale({ length0 / 100.0f, length0 / 100.0f })
+            *
+            // 中心点に移動する
             D2D1::Matrix3x2F::Translation(center.X, center.Y);
 
         m_pRenderTarget->SetTransform(matrix1);
-
+        m_pBrush->SetColor(color);
         m_pRenderTarget->DrawGeometry(m_pPathGeometry, m_pBrush, 1);
-
-        SafeRelease(&m_pPathGeometry);
     }
 
-    // 円を描く
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-    //m_pRenderTarget->DrawEllipse(
-    //    D2D1::Ellipse(
-    //        D2D1::Point2F(rect.X + rect.Width / 2, rect.Y + rect.Height / 2),
-    //        rect.Width / 2, rect.Height / 2),
-    //    m_pBrush,
-    //    0.7f
-    //);
-
-    // 真ん中から左下へ。
-//    DrawLineByAngle(g, &p, center, PMIN, 0, length0);
-
-    // 真ん中から右下へ。
-//    DrawLineByAngle(g, &p, center, PMAX, 0, length0);
 
     // 凡例の線
-    p.SetWidth(1.9f * scale);
-    Font font(L"Tahoma", 11.5f * scale);
-    StringFormat format1;
-    format1.SetAlignment(StringAlignmentCenter);
-    format1.SetLineAlignment(StringAlignmentCenter);
     for (int i = 0; guideLines[i].percent != 0.0f; i++) {
 
         if (guideLines[i].percent > 100) {
             continue;
         }
 
-        p.SetColor(guideLines[i].color);
-
         float angle = guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN;
-//        DrawLineByAngle(g, &p, center, angle, length0 * 0.85f, length0);
+        m_pBrush->SetColor(ToD2D1Color(guideLines[i].color));
+        DrawLineByAngle(center, angle,
+            length0 * 0.85f, length0,
+            1.5f * scale);
 
         LPCWSTR text = guideLines[i].text;
         if (wcslen(text) >= 1) {
@@ -1002,15 +1006,41 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
             float length = length0 * 0.72f;
             Gdiplus::RectF rect1(center.X - length * cosf(rad), center.Y - length * sinf(rad), w, h);
             rect1.Offset(-w / 2, -h / 2);
-            SolidBrush fontBrush(guideLines[i].color);
-//            g.DrawString(text, (int)wcslen(text), &font, rect1, &format1, &fontBrush);
-//            g.DrawRectangle(&p, rect1);
+
+            m_pBrush->SetColor(ToD2D1Color(guideLines[i].color));
+            m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+
+            IDWriteTextLayout* pTextLayout = NULL;
+            if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, wcslen(text), m_pTextFormat3, rect1.Width, rect1.Height, &pTextLayout))) {
+
+                pTextLayout->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+                m_pRenderTarget->DrawTextLayout(D2D1::Point2F(rect1.X, rect1.Y), pTextLayout, m_pBrush);
+
+                SafeRelease(&pTextLayout);
+            }
+
+//            m_pRenderTarget->DrawRectangle(ToD2D1Rect(rect1), m_pBrush);
         }
     }
 
 
     // 針を描く
-    p.SetColor(color);
-    p.SetWidth(5 * scale);
-//    DrawLineByAngle(g, &p, center, percent / 100.0f * (PMAX - PMIN) + PMIN, 0, length0 * 0.9f);
+    float strokeWidth = 5 * scale;
+    float angle = percent / 100.0f * (PMAX - PMIN) + PMIN;
+    m_pBrush->SetColor(color);
+    DrawLineByAngle(center, angle, 0, length0 * 0.9f, strokeWidth);
+}
+
+void MeterDrawer::DrawLineByAngle(Gdiplus::PointF &center, float angle, float length1, float length2, float strokeWidth)
+{
+    // TODO Transformで実装したほうがGPUを使えて速そう
+    float rad = PI * angle / 180;
+    float c1 = cosf(rad);
+    float s1 = sinf(rad);
+
+    m_pRenderTarget->DrawLine(
+        D2D1::Point2F(center.X - length1 * c1, center.Y - length1 * s1),
+        D2D1::Point2F(center.X - length2 * c1, center.Y - length2 * s1),
+        m_pBrush,
+        strokeWidth);
 }
