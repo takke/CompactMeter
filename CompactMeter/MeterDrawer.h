@@ -20,6 +20,7 @@ class MeterDrawer
 private:
     FpsCounter  m_fpsCounter;
 
+    // 左下、右下の角度
     const float PMIN = -30;
     const float PMAX = 180 - PMIN;
 

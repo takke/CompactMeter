@@ -103,7 +103,6 @@ HRESULT MeterDrawer::CreateDeviceIndependentResources()
                     D2D1_FIGURE_BEGIN_FILLED
                 );
 
-                // 左下、右下の角度
                 float length0 = 100.0;
 
                 float x1 = -length0 * cosf(PI * PMIN / 180);
@@ -156,6 +155,7 @@ HRESULT MeterDrawer::CreateDeviceIndependentResources()
 
                 hr = pSink->Close();
             }
+
             SafeRelease(&pSink);
         }
     }
