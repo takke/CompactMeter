@@ -85,55 +85,6 @@ HRESULT MeterDrawer::CreateDeviceIndependentResources()
         return hr;
     }
 
-    // TODO リサイズ時に作り直すこと
-    // TextFormat
-    hr = m_pDWFactory->CreateTextFormat(
-        L"ＭＳゴシック"
-        , NULL
-        , DWRITE_FONT_WEIGHT_NORMAL
-        , DWRITE_FONT_STYLE_NORMAL
-        , DWRITE_FONT_STRETCH_NORMAL
-        , 12
-        , L""
-        , &m_pTextFormat
-    );
-    if (FAILED(hr)) {
-        Logger::d(L"cannot init TextFormat");
-        return hr;
-    }
-
-    // TextFormat
-    hr = m_pDWFactory->CreateTextFormat(
-        L"ＭＳゴシック"
-        , NULL
-        , DWRITE_FONT_WEIGHT_NORMAL
-        , DWRITE_FONT_STYLE_NORMAL
-        , DWRITE_FONT_STRETCH_NORMAL
-        , 10
-        , L""
-        , &m_pTextFormat2
-    );
-    if (FAILED(hr)) {
-        Logger::d(L"cannot init TextFormat");
-        return hr;
-    }
-
-    // TextFormat
-    hr = m_pDWFactory->CreateTextFormat(
-        L"ＭＳゴシック"
-        , NULL
-        , DWRITE_FONT_WEIGHT_NORMAL
-        , DWRITE_FONT_STYLE_NORMAL
-        , DWRITE_FONT_STRETCH_NORMAL
-        , 8
-        , L""
-        , &m_pTextFormat3
-    );
-    if (FAILED(hr)) {
-        Logger::d(L"cannot init TextFormat");
-        return hr;
-    }
-
     // PathGeometry
     // (0, 0) を原点に 100 のサイズで描画
     {
@@ -451,26 +402,59 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
         // デバッグ用計測器
         DWORD duration1 = m_stopWatch1.GetAverageDurationMicroseconds();
+        DWORD duration2 = m_stopWatch2.GetAverageDurationMicroseconds();
         DWORD durationWorker = pWorker->m_stopWatch.GetAverageDurationMicroseconds();
 
         str.Format(L"i=%d, FPS=%d/%d, "
             L"n=%d size=%.0fx%.0f \n"
             L"%s \n"
             L"box=%.0f DPI=%d,%d(%.2f)\n"
-            L"描画=%5.1fms\n計測=%5.1fms\n"
+            L"描画=%5.1fms, フォント生成=%5.3fms\n"
+            L"計測=%5.1fms\n"
             , iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps
             , pWorker->traffics.size(), screenWidth, screenHeight
             , (LPCTSTR)strDateTime
             , size, g_dpix, g_dpiy, g_dpiScale
-            , duration1 / 1000.0, durationWorker / 1000.0
+            , duration1 / 1000.0
+            , duration2 / 1000.0
+            , durationWorker / 1000.0
         );
 
         m_pBrush->SetColor(D2D1::ColorF(0xC0C0C0));
         m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-        m_pRenderTarget->DrawText(str, str.GetLength(), m_pTextFormat,
-            &D2D1::RectF(0, y, screenWidth, screenHeight), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
-            DWRITE_MEASURING_MODE_NATURAL);
+
+        // TextFormat
+        IDWriteTextFormat* pTextFormat;
+        m_stopWatch2.Start();
+        if (CreateMyTextFormat(12.0f, &pTextFormat)) {
+            m_stopWatch2.Stop();
+
+            m_pRenderTarget->DrawText(str, str.GetLength(), pTextFormat,
+                &D2D1::RectF(4, y+4, screenWidth, screenHeight), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
+                DWRITE_MEASURING_MODE_NATURAL);
+            SafeRelease(&pTextFormat);
+        }
+
     }
+}
+
+boolean MeterDrawer::CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) {
+
+    HRESULT hr = m_pDWFactory->CreateTextFormat(
+        L"メイリオ"
+        , NULL
+        , DWRITE_FONT_WEIGHT_NORMAL
+        , DWRITE_FONT_STYLE_NORMAL
+        , DWRITE_FONT_STRETCH_NORMAL
+        , fontSize
+        , L""
+        , ppTextFormat
+    );
+    if (FAILED(hr)) {
+        Logger::d(L"cannot init TextFormat");
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -525,9 +509,16 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
 
     m_pBrush->SetColor(color);
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-    m_pRenderTarget->DrawText(str, wcslen(str), m_pTextFormat2,
-        rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
-        DWRITE_MEASURING_MODE_NATURAL);
+
+    // TextFormat
+    IDWriteTextFormat* pTextFormat;
+    if (CreateMyTextFormat(9, &pTextFormat)) {
+
+        m_pRenderTarget->DrawText(str, wcslen(str), pTextFormat,
+            rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
+            DWRITE_MEASURING_MODE_NATURAL);
+        SafeRelease(&pTextFormat);
+    }
 
 
     rect.top += size / 5.0f;
@@ -593,13 +584,19 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
             m_pBrush->SetColor(guideLines[i].color);
             m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 
-            IDWriteTextLayout* pTextLayout = NULL;
-            if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, wcslen(text), m_pTextFormat3, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
+            IDWriteTextFormat* pTextFormat;
+            if (CreateMyTextFormat(9, &pTextFormat)) {
 
-                pTextLayout->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-                m_pRenderTarget->DrawTextLayout(D2D1::Point2F(rect1.left, rect1.top), pTextLayout, m_pBrush);
+                IDWriteTextLayout* pTextLayout = NULL;
+                if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, wcslen(text), pTextFormat, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
 
-                SafeRelease(&pTextLayout);
+                    pTextLayout->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+                    m_pRenderTarget->DrawTextLayout(D2D1::Point2F(rect1.left, rect1.top), pTextLayout, m_pBrush);
+
+                    SafeRelease(&pTextLayout);
+                }
+
+                SafeRelease(&pTextFormat);
             }
 
 //            m_pRenderTarget->DrawRectangle(ToD2D1Rect(rect1), m_pBrush);

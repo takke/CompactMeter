@@ -25,29 +25,24 @@ private:
 
     // デバッグ用計測器
     StopWatch   m_stopWatch1;
+    StopWatch   m_stopWatch2;
 
     // Direct2D(DeviceDependent)
-    ID2D1HwndRenderTarget*       m_pRenderTarget;
-    ID2D1SolidColorBrush*        m_pBrush;
+    ID2D1HwndRenderTarget* m_pRenderTarget;
+    ID2D1SolidColorBrush*  m_pBrush;
 
     // Direct2D(DeviceIndependent)
-    ID2D1Factory*                m_pD2DFactory;
-    IDWriteTextFormat*           m_pTextFormat;     // デバッグログ表示用
-    IDWriteTextFormat*           m_pTextFormat2;    // メーターの文字用
-    IDWriteTextFormat*           m_pTextFormat3;    // メーターのラベル用
-    ID2D1PathGeometry*           m_pPathGeometry;   // メーターの枠
+    ID2D1Factory*          m_pD2DFactory;
+    ID2D1PathGeometry*     m_pPathGeometry;   // メーターの枠
 
     // DirectWrite(DeviceIndependent)
-    IDWriteFactory*              m_pDWFactory;
+    IDWriteFactory*        m_pDWFactory;
 
 public:
     MeterDrawer()
         : m_pRenderTarget(NULL)
         , m_pBrush(NULL)
         , m_pD2DFactory(NULL)
-        , m_pTextFormat(NULL)
-        , m_pTextFormat2(NULL)
-        , m_pTextFormat3(NULL)
         , m_pPathGeometry(NULL)
         , m_pDWFactory(NULL)
     {
@@ -72,9 +67,6 @@ public:
     {
         SafeRelease(&m_pD2DFactory);
         SafeRelease(&m_pDWFactory);
-        SafeRelease(&m_pTextFormat);
-        SafeRelease(&m_pTextFormat2);
-        SafeRelease(&m_pTextFormat3);
         SafeRelease(&m_pPathGeometry);
     }
 
@@ -87,6 +79,7 @@ public:
 private:
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
+    boolean CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
     void DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 
     void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
