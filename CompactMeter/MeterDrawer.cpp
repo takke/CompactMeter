@@ -216,27 +216,6 @@ void MeterDrawer::Draw(Graphics& g, HWND hWnd, CWorker* pWorker)
     }
 }
 
-void MeterDrawer::DrawD2D(HWND hWnd, CWorker* pWorker)
-{
-    //--------------------------------------------------
-    // Draw
-    //--------------------------------------------------
-    m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-    m_pRenderTarget->Clear(D2D1::ColorF(0x0A0A0A));
-
-    float screenWidth = (float)g_pIniConfig->mWindowWidth;
-    float screenHeight = (float)g_pIniConfig->mWindowHeight;
-
-    if (pWorker != NULL && pWorker->traffics.size() >= 2) {
-
-        pWorker->criticalSection.Lock();
-
-        DrawMetersD2D(hWnd, pWorker, screenWidth, screenHeight);
-
-        pWorker->criticalSection.Unlock();
-    }
-}
-
 void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight)
 {
     Gdiplus::RectF rect;
@@ -457,15 +436,163 @@ void MeterDrawer::DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float scr
     }
 }
 
+/**
+ * メーターを描画する
+ *
+ * colors, guideLines の最後は必ず percent=0.0 にすること
+ */
+void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale)
+{
+    auto size = rect.Width;
+
+    if (percent < 0.0f) {
+        percent = 0.0f;
+    }
+    else if (percent > 100.0f) {
+        percent = 100.0f;
+    }
+
+    Color color;
+    for (int i = 0; ; i++) {
+        if (percent >= colors[i].percent) {
+            color = Color(colors[i].color);
+            break;
+        }
+
+        if (colors[i].percent == 0.0f) {
+            break;
+        }
+    }
+
+    //--------------------------------------------------
+    // 枠線
+    //--------------------------------------------------
+    if (g_pIniConfig->mDrawBorder) {
+
+        Pen pen1(Color(64, 64, 64), 1);
+        g.DrawRectangle(&pen1, rect);
+    }
+
+    float margin = size / 50;
+    rect.Offset(margin, margin);
+    rect.Width -= margin * 2;
+    rect.Height -= margin * 2;
+
+    // ペン
+    Pen p(color, 1.2f);
+    SolidBrush mainBrush(color);
+
+    //--------------------------------------------------
+    // ラベル
+    //--------------------------------------------------
+    float scale = 1 / g_dpiScale * size / 300.0f * fontScale;
+    Font fontTahoma(L"Tahoma", 19.0f * scale);
+    StringFormat format;
+    format.SetAlignment(StringAlignmentNear);
+    g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
+    rect.Offset(0, size / 5.0f);
+
+    //--------------------------------------------------
+    // メーター描画
+    //--------------------------------------------------
+
+    // アンチエイリアス
+//  g.SetSmoothingMode(SmoothingModeNone);
+    g.SetSmoothingMode(SmoothingModeHighQuality);
+
+    // 左下、右下の角度
+    float PMIN = -30;
+    float PMAX = 180 - PMIN;
+
+    // 外枠
+    Gdiplus::PointF center(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+    g.DrawArc(&p, rect, -180 + PMIN, PMAX - PMIN);
+
+    float length0 = rect.Width / 2;
+
+    // 真ん中から左下へ。
+    DrawLineByAngle(g, &p, center, PMIN, 0, length0);
+
+    // 真ん中から右下へ。
+    DrawLineByAngle(g, &p, center, PMAX, 0, length0);
+
+    // 凡例の線
+    p.SetWidth(1.9f * scale);
+    Font font(L"Tahoma", 11.5f * scale);
+    StringFormat format1;
+    format1.SetAlignment(StringAlignmentCenter);
+    format1.SetLineAlignment(StringAlignmentCenter);
+    for (int i = 0; guideLines[i].percent != 0.0f; i++) {
+
+        if (guideLines[i].percent > 100) {
+            continue;
+        }
+
+        p.SetColor(guideLines[i].color);
+
+        float angle = guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN;
+        DrawLineByAngle(g, &p, center, angle, length0 * 0.85f, length0);
+
+        LPCWSTR text = guideLines[i].text;
+        if (wcslen(text) >= 1) {
+            float rad = PI * angle / 180;
+            float w = length0 / 3;
+            float h = length0 / 5;
+            float length = length0 * 0.72f;
+            Gdiplus::RectF rect1(center.X - length * cosf(rad), center.Y - length * sinf(rad), w, h);
+            rect1.Offset(-w / 2, -h / 2);
+            SolidBrush fontBrush(guideLines[i].color);
+            g.DrawString(text, (int)wcslen(text), &font, rect1, &format1, &fontBrush);
+//            g.DrawRectangle(&p, rect1);
+        }
+    }
+
+
+    // 針を描く
+    p.SetColor(color);
+    p.SetWidth(5 * scale);
+    DrawLineByAngle(g, &p, center, percent / 100.0f * (PMAX - PMIN) + PMIN, 0, length0 * 0.9f);
+}
+
+// TODO 最終的には Gdiplus::RectF を利用しないようにすること
+inline D2D1_RECT_F ToD2D1Rect(const Gdiplus::RectF& rect) {
+
+    D2D1_RECT_F rect2;
+    rect2.left = rect.X;
+    rect2.top = rect.Y;
+    rect2.right = rect.X + rect.Width;
+    rect2.bottom = rect.Y + rect.Height;
+    return rect2;
+}
+
+void MeterDrawer::DrawD2D(HWND hWnd, CWorker* pWorker)
+{
+    //--------------------------------------------------
+    // Draw
+    //--------------------------------------------------
+    m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+    m_pRenderTarget->Clear(D2D1::ColorF(0x0A0A0A));
+
+    float screenWidth = (float)g_pIniConfig->mWindowWidth;
+    float screenHeight = (float)g_pIniConfig->mWindowHeight;
+
+    if (pWorker != NULL && pWorker->traffics.size() >= 2) {
+
+        pWorker->criticalSection.Lock();
+
+        DrawMetersD2D(hWnd, pWorker, screenWidth, screenHeight);
+
+        pWorker->criticalSection.Unlock();
+    }
+}
+
 void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight)
 {
     Gdiplus::RectF rect;
 
     CString str;
-    RECT rectWindow;
-    GetClientRect(hWnd, &rectWindow);
     // 各ウィジェットのサイズ(width, height)
-    float size = rectWindow.right / 2.0f;
+    float size = screenWidth / 2.0f;
 
     // 試しにDPIを設定してみる
 //    m_pRenderTarget->SetDpi(96.0f, 96.0f);
@@ -643,13 +770,13 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
         DWORD durationWorker = pWorker->m_stopWatch.GetAverageDurationMicroseconds();
 
         str.Format(L"i=%d, FPS=%d/%d, "
-            L"n=%d size=%dx%d \n"
+            L"n=%d size=%.0fx%.0f \n"
             L"%s \n"
             L"box=%.0f DPI=%d,%d(%.2f)\n"
             L"描画=%5.1fms\n転送=%5.1fms\n計測=%5.1fms\n"
             L"RenderMode=%s\n"
             , iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps
-            , pWorker->traffics.size(), rectWindow.right, rectWindow.bottom
+            , pWorker->traffics.size(), screenWidth, screenHeight
             , (LPCTSTR)strDateTime
             , size, g_dpix, g_dpiy, g_dpiScale
             , duration1 / 1000.0, duration2 / 1000.0, durationWorker / 1000.0
@@ -662,135 +789,6 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
             &D2D1::RectF(0, y, screenWidth, screenHeight), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
             DWRITE_MEASURING_MODE_NATURAL);
     }
-}
-
-/**
- * メーターを描画する
- *
- * colors, guideLines の最後は必ず percent=0.0 にすること
- */
-void MeterDrawer::DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale)
-{
-    auto size = rect.Width;
-
-    if (percent < 0.0f) {
-        percent = 0.0f;
-    }
-    else if (percent > 100.0f) {
-        percent = 100.0f;
-    }
-
-    Color color;
-    for (int i = 0; ; i++) {
-        if (percent >= colors[i].percent) {
-            color = Color(colors[i].color);
-            break;
-        }
-
-        if (colors[i].percent == 0.0f) {
-            break;
-        }
-    }
-
-    //--------------------------------------------------
-    // 枠線
-    //--------------------------------------------------
-    if (g_pIniConfig->mDrawBorder) {
-
-        Pen pen1(Color(64, 64, 64), 1);
-        g.DrawRectangle(&pen1, rect);
-    }
-
-    float margin = size / 50;
-    rect.Offset(margin, margin);
-    rect.Width -= margin * 2;
-    rect.Height -= margin * 2;
-
-    // ペン
-    Pen p(color, 1.2f);
-    SolidBrush mainBrush(color);
-
-    //--------------------------------------------------
-    // ラベル
-    //--------------------------------------------------
-    float scale = 1 / g_dpiScale * size / 300.0f * fontScale;
-    Font fontTahoma(L"Tahoma", 19.0f * scale);
-    StringFormat format;
-    format.SetAlignment(StringAlignmentNear);
-    g.DrawString(str, (int)wcslen(str), &fontTahoma, rect, &format, &mainBrush);
-    rect.Offset(0, size / 5.0f);
-
-    //--------------------------------------------------
-    // メーター描画
-    //--------------------------------------------------
-
-    // アンチエイリアス
-//  g.SetSmoothingMode(SmoothingModeNone);
-    g.SetSmoothingMode(SmoothingModeHighQuality);
-
-    // 左下、右下の角度
-    float PMIN = -30;
-    float PMAX = 180 - PMIN;
-
-    // 外枠
-    Gdiplus::PointF center(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-    g.DrawArc(&p, rect, -180 + PMIN, PMAX - PMIN);
-
-    float length0 = rect.Width / 2;
-
-    // 真ん中から左下へ。
-    DrawLineByAngle(g, &p, center, PMIN, 0, length0);
-
-    // 真ん中から右下へ。
-    DrawLineByAngle(g, &p, center, PMAX, 0, length0);
-
-    // 凡例の線
-    p.SetWidth(1.9f * scale);
-    Font font(L"Tahoma", 11.5f * scale);
-    StringFormat format1;
-    format1.SetAlignment(StringAlignmentCenter);
-    format1.SetLineAlignment(StringAlignmentCenter);
-    for (int i = 0; guideLines[i].percent != 0.0f; i++) {
-
-        if (guideLines[i].percent > 100) {
-            continue;
-        }
-
-        p.SetColor(guideLines[i].color);
-
-        float angle = guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN;
-        DrawLineByAngle(g, &p, center, angle, length0 * 0.85f, length0);
-
-        LPCWSTR text = guideLines[i].text;
-        if (wcslen(text) >= 1) {
-            float rad = PI * angle / 180;
-            float w = length0 / 3;
-            float h = length0 / 5;
-            float length = length0 * 0.72f;
-            Gdiplus::RectF rect1(center.X - length * cosf(rad), center.Y - length * sinf(rad), w, h);
-            rect1.Offset(-w / 2, -h / 2);
-            SolidBrush fontBrush(guideLines[i].color);
-            g.DrawString(text, (int)wcslen(text), &font, rect1, &format1, &fontBrush);
-//            g.DrawRectangle(&p, rect1);
-        }
-    }
-
-
-    // 針を描く
-    p.SetColor(color);
-    p.SetWidth(5 * scale);
-    DrawLineByAngle(g, &p, center, percent / 100.0f * (PMAX - PMIN) + PMIN, 0, length0 * 0.9f);
-}
-
-// TODO 最終的には Gdiplus::RectF を利用しないようにすること
-inline D2D1_RECT_F ToD2D1Rect(const Gdiplus::RectF& rect) {
-
-    D2D1_RECT_F rect2;
-    rect2.left = rect.X;
-    rect2.top = rect.Y;
-    rect2.right = rect.X + rect.Width;
-    rect2.bottom = rect.Y + rect.Height;
-    return rect2;
 }
 
 /**

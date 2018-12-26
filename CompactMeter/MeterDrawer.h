@@ -78,11 +78,10 @@ public:
 
 private:
     void Draw(Graphics& g, HWND hWnd, CWorker* pWorker);
-    void DrawD2D(HWND hWnd, CWorker* pWorker);
-
     void DrawMeters(Graphics& g, HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
     void DrawMeter(Graphics& g, Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 
+    void DrawD2D(HWND hWnd, CWorker* pWorker);
     void DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
     void DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
 
