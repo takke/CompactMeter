@@ -76,14 +76,12 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
             m_stopWatch1.Start();
 
             m_pRenderTarget->BeginDraw();
-            m_stopWatch1.Stop();
 
-            m_stopWatch2.Start();
             DrawD2D(hWnd, pWorker);
 
             m_pRenderTarget->EndDraw();
 
-            m_stopWatch2.Stop();
+            m_stopWatch1.Stop();
 
         } else {
 
@@ -287,6 +285,10 @@ HRESULT MeterDrawer::CreateDeviceResources(HWND hWnd, int width, int height)
             Logger::d(L"cannot init HwndRenderTarget");
             return hr;
         }
+
+        // アンチエイリアス
+        m_pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+
 
         // Brush
         hr = m_pRenderTarget->CreateSolidColorBrush(
@@ -705,24 +707,24 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
     //--------------------------------------------------
     // CPU+Memory タコメーター描画
     //--------------------------------------------------
-    static MeterColor cpuColors[] = {
-        { 90.0, Color(255, 64, 64) },
-        { 80.0, Color(255, 128, 64) },
-        { 70.0, Color(192, 192, 64) },
-        {  0.0, Color(192, 192, 192) }
+    static MeterColorD2D cpuColors[] = {
+        { 90.0, D2D1::ColorF(0xFF4040) },
+        { 80.0, D2D1::ColorF(0xFF8040) },
+        { 70.0, D2D1::ColorF(0xC0C040) },
+        {  0.0, D2D1::ColorF(0xC0C0C0) }
     };
-    static MeterGuide cpuGuides[] = {
-        { 100.0, Color(255,  64,  64), L"" },
-        {  90.0, Color(255,  64,  64), L"" },
-        {  80.0, Color(255,  64,  64), L"" },
-        {  70.0, Color(255,  64,  64), L"" },
-        {  60.0, Color(192, 192, 192), L"" },
-        {  50.0, Color(192, 192, 192), L"" },
-        {  40.0, Color(192, 192, 192), L"" },
-        {  30.0, Color(192, 192, 192), L"" },
-        {  20.0, Color(192, 192, 192), L"" },
-        {  10.0, Color(192, 192, 192), L"" },
-        {   0.0, Color(192, 192, 192), L"" },
+    static MeterGuideD2D cpuGuides[] = {
+        { 100.0, D2D1::ColorF(0xFF4040), L"" },
+        {  90.0, D2D1::ColorF(0xFF4040), L"" },
+        {  80.0, D2D1::ColorF(0xFF4040), L"" },
+        {  70.0, D2D1::ColorF(0xFF4040), L"" },
+        {  60.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  50.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  40.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  30.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  20.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  10.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {   0.0, D2D1::ColorF(0xC0C0C0), L"" },
     };
 
     CpuUsage cpuUsage;
@@ -820,20 +822,20 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
     inb /= 1000;
     outb /= 1000;
 
-    MeterColor netColors[] = {
-        { KbToPercent(1000, maxTrafficBytes), Color(255,  64,  64) },
-        { KbToPercent( 100, maxTrafficBytes), Color(255, 128,  64) },
-        { KbToPercent(  10, maxTrafficBytes), Color(192, 192,  64) },
-        {                                0.0, Color(192, 192, 192) }
+    MeterColorD2D netColors[] = {
+        { KbToPercent(1000, maxTrafficBytes), D2D1::ColorF(0xFF4040) },
+        { KbToPercent( 100, maxTrafficBytes), D2D1::ColorF(0XFF8040) },
+        { KbToPercent(  10, maxTrafficBytes), D2D1::ColorF(0xC0C040) },
+        {                                0.0, D2D1::ColorF(0xC0C0C0) }
     };
-    MeterGuide netGuides[] = {
-        { KbToPercent(1000000, maxTrafficBytes), Color(255,  64,  64), L"1G"   },
-        { KbToPercent( 100000, maxTrafficBytes), Color(255,  64,  64), L"100M" },
-        { KbToPercent(  10000, maxTrafficBytes), Color(255,  64,  64), L"10M"  },
-        { KbToPercent(   1000, maxTrafficBytes), Color(255,  64,  64), L"1M"   },
-        { KbToPercent(    100, maxTrafficBytes), Color(255, 128,  64), L"100K" },
-        { KbToPercent(     10, maxTrafficBytes), Color(192, 192,  64), L"10K"  },
-        {                                   0.0, Color(192, 192, 192), L""     },
+    MeterGuideD2D netGuides[] = {
+        { KbToPercent(1000000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1G"   },
+        { KbToPercent( 100000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"100M" },
+        { KbToPercent(  10000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"10M"  },
+        { KbToPercent(   1000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1M"   },
+        { KbToPercent(    100, maxTrafficBytes), D2D1::ColorF(0xFF8040), L"100K" },
+        { KbToPercent(     10, maxTrafficBytes), D2D1::ColorF(0xC0C040), L"10K"  },
+        {                                   0.0, D2D1::ColorF(0xC0C0C0), L""     },
     };
 
     // Up(KB単位)
@@ -870,20 +872,19 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
 
         // デバッグ用計測器
         DWORD duration1 = m_stopWatch1.GetAverageDurationMicroseconds();
-        DWORD duration2 = m_stopWatch2.GetAverageDurationMicroseconds();
         DWORD durationWorker = pWorker->m_stopWatch.GetAverageDurationMicroseconds();
 
         str.Format(L"i=%d, FPS=%d/%d, "
             L"n=%d size=%.0fx%.0f \n"
             L"%s \n"
             L"box=%.0f DPI=%d,%d(%.2f)\n"
-            L"描画=%5.1fms\n転送=%5.1fms\n計測=%5.1fms\n"
+            L"描画=%5.1fms\n計測=%5.1fms\n"
             L"RenderMode=%s\n"
             , iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps
             , pWorker->traffics.size(), screenWidth, screenHeight
             , (LPCTSTR)strDateTime
             , size, g_dpix, g_dpiy, g_dpiScale
-            , duration1 / 1000.0, duration2 / 1000.0, durationWorker / 1000.0
+            , duration1 / 1000.0, durationWorker / 1000.0
             , g_pIniConfig->mDirect2DMode ? L"Direct2D" : L"GDI"
         );
 
@@ -895,17 +896,12 @@ void MeterDrawer::DrawMetersD2D(HWND hWnd, CWorker* pWorker, float screenWidth, 
     }
 }
 
-inline D2D1::ColorF ToD2D1Color(Color color) {
-
-    return D2D1::ColorF(color.GetR() / 255.0f, color.GetG() / 255.0f, color.GetB() / 255.0f);
-}
-
 /**
  * メーターを描画する
  *
  * colors, guideLines の最後は必ず percent=0.0 にすること
  */
-void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale)
+void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR* str, MeterColorD2D colors[], MeterGuideD2D guideLines[], float fontScale)
 {
     auto size = rect.Width;
 
@@ -919,7 +915,7 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
     D2D1::ColorF color(0x000000);
     for (int i = 0; ; i++) {
         if (percent >= colors[i].percent) {
-            color = ToD2D1Color(colors[i].color);
+            color = colors[i].color;
             break;
         }
 
@@ -962,9 +958,6 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
     // メーター描画
     //--------------------------------------------------
 
-    // アンチエイリアス
-//    m_pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-
     float length0 = rect.Width / 2;
 
     // 外枠
@@ -993,7 +986,7 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
         }
 
         float angle = guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN;
-        m_pBrush->SetColor(ToD2D1Color(guideLines[i].color));
+        m_pBrush->SetColor(guideLines[i].color);
         DrawLineByAngle(center, angle,
             length0 * 0.85f, length0,
             1.5f * scale);
@@ -1007,7 +1000,7 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
             Gdiplus::RectF rect1(center.X - length * cosf(rad), center.Y - length * sinf(rad), w, h);
             rect1.Offset(-w / 2, -h / 2);
 
-            m_pBrush->SetColor(ToD2D1Color(guideLines[i].color));
+            m_pBrush->SetColor(guideLines[i].color);
             m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 
             IDWriteTextLayout* pTextLayout = NULL;
@@ -1033,14 +1026,14 @@ void MeterDrawer::DrawMeterD2D(Gdiplus::RectF& rect, float percent, const WCHAR*
 
 void MeterDrawer::DrawLineByAngle(Gdiplus::PointF &center, float angle, float length1, float length2, float strokeWidth)
 {
-    // TODO Transformで実装したほうがGPUを使えて速そう
-    float rad = PI * angle / 180;
-    float c1 = cosf(rad);
-    float s1 = sinf(rad);
-
+    m_pRenderTarget->SetTransform(
+        D2D1::Matrix3x2F::Rotation(angle)
+        *
+        D2D1::Matrix3x2F::Translation(center.X, center.Y)
+    );
     m_pRenderTarget->DrawLine(
-        D2D1::Point2F(center.X - length1 * c1, center.Y - length1 * s1),
-        D2D1::Point2F(center.X - length2 * c1, center.Y - length2 * s1),
+        D2D1::Point2F(-length1, 0),
+        D2D1::Point2F(-length2, 0),
         m_pBrush,
         strokeWidth);
 }
