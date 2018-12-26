@@ -60,6 +60,7 @@ public:
 
     void DrawToDC(HDC hdc, HWND hWnd, CWorker* pWorker);
 
+private:
     HRESULT CreateDeviceIndependentResources();
     HRESULT CreateDeviceResources(HWND hWnd, int width, int height);
 
@@ -76,13 +77,11 @@ public:
         SafeRelease(&m_pBrush);
     }
 
-private:
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-    boolean CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
     void DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
-
     void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
+    boolean CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
 
     inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
     {

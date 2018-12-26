@@ -298,7 +298,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_pIniConfig->mWindowHeight = rectWindow.bottom;
             g_pIniConfig->Save();
 
-            // オフスクリーン再生成
+            // リサイズ通知
             g_meterDrawer.Resize(hWnd, g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
 
         }

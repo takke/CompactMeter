@@ -15,13 +15,12 @@ void MeterDrawer::Init(HWND hWnd, int width, int height) {
     if (FAILED(hr)) return;
 
     // Direct2D 初期化
-    Resize(hWnd, width, height);
+    CreateDeviceResources(hWnd, width, height);
 }
 
 void MeterDrawer::Resize(HWND hWnd, int width, int height) {
 
-    DiscardDeviceResources();
-    CreateDeviceResources(hWnd, width, height);
+    m_pRenderTarget->Resize(D2D1::SizeU(width, height));
 }
 
 void MeterDrawer::Shutdown() {
@@ -438,25 +437,6 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     }
 }
 
-boolean MeterDrawer::CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) {
-
-    HRESULT hr = m_pDWFactory->CreateTextFormat(
-        L"メイリオ"
-        , NULL
-        , DWRITE_FONT_WEIGHT_NORMAL
-        , DWRITE_FONT_STYLE_NORMAL
-        , DWRITE_FONT_STRETCH_NORMAL
-        , fontSize
-        , L""
-        , ppTextFormat
-    );
-    if (FAILED(hr)) {
-        Logger::d(L"cannot init TextFormat");
-        return false;
-    }
-    return true;
-}
-
 /**
  * メーターを描画する
  *
@@ -505,14 +485,14 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
     //--------------------------------------------------
     // ラベル
     //--------------------------------------------------
-    float scale = 1 / g_dpiScale * size / 300.0f * fontScale;
+    float scale = 1 / g_dpiScale * size / 150.0f * fontScale;
 
     m_pBrush->SetColor(color);
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 
     // TextFormat
     IDWriteTextFormat* pTextFormat;
-    if (CreateMyTextFormat(9, &pTextFormat)) {
+    if (CreateMyTextFormat(11 * scale, &pTextFormat)) {
 
         m_pRenderTarget->DrawText(str, wcslen(str), pTextFormat,
             rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
@@ -561,7 +541,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
         m_pBrush->SetColor(guideLines[i].color);
         DrawLineByAngle(center, angle,
             length0 * 0.85f, length0,
-            1.5f * scale);
+            0.8f * scale);
 
         LPCWSTR text = guideLines[i].text;
         if (wcslen(text) >= 1) {
@@ -585,7 +565,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
             m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 
             IDWriteTextFormat* pTextFormat;
-            if (CreateMyTextFormat(9, &pTextFormat)) {
+            if (CreateMyTextFormat(8 * scale, &pTextFormat)) {
 
                 IDWriteTextLayout* pTextLayout = NULL;
                 if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, wcslen(text), pTextFormat, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
@@ -605,7 +585,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, 
 
 
     // 針を描く
-    float strokeWidth = 5 * scale;
+    float strokeWidth = 3 * scale;
     float angle = percent / 100.0f * (PMAX - PMIN) + PMIN;
     m_pBrush->SetColor(color);
     DrawLineByAngle(center, angle, 0, length0 * 0.9f, strokeWidth);
@@ -623,4 +603,23 @@ void MeterDrawer::DrawLineByAngle(D2D1_POINT_2F& center, float angle, float leng
         D2D1::Point2F(-length2, 0),
         m_pBrush,
         strokeWidth);
+}
+
+boolean MeterDrawer::CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) {
+
+    HRESULT hr = m_pDWFactory->CreateTextFormat(
+        L"メイリオ"
+        , NULL
+        , DWRITE_FONT_WEIGHT_NORMAL
+        , DWRITE_FONT_STYLE_NORMAL
+        , DWRITE_FONT_STRETCH_NORMAL
+        , fontSize
+        , L""
+        , ppTextFormat
+    );
+    if (FAILED(hr)) {
+        Logger::d(L"cannot init TextFormat");
+        return false;
+    }
+    return true;
 }
