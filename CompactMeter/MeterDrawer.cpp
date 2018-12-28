@@ -228,8 +228,13 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // 各メーター情報の収集
     //--------------------------------------------------
-    std::vector<MeterInfo> meters;
     int nCore = 0;
+
+    MeterInfo cpuMeter;
+    MeterInfo memoryMeter;
+    std::vector<MeterInfo> coreMeters;
+    MeterInfo netMeterIn;
+    MeterInfo netMeterOut;
 
     // CPU+Memory
     {
@@ -258,7 +263,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
         // 全コアの合計
         {
-            MeterInfo& mi = addMeter(meters);
+            MeterInfo& mi = cpuMeter;
 
             mi.percent = cpuUsage.usages[0];
             mi.label.Format(L"CPU (%.0f%%)", mi.percent);
@@ -283,7 +288,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
             DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
 
-            MeterInfo& mi = addMeter(meters);
+            MeterInfo& mi = memoryMeter;
             mi.percent = ullUsing * 100.0f / ms.ullTotalPhys;
             mi.label.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", mi.percent, ullUsing / 1024 / 1024, ms.ullTotalPhys / 1024 / 1024);
             mi.colors = cpuColors;
@@ -293,7 +298,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         // 各Core
         if (g_pIniConfig->mShowCoreMeters) {
             for (int i = 0; i < nCore; i++) {
-                MeterInfo& mi = addMeter(meters);
+                MeterInfo& mi = addMeter(coreMeters);
 
                 mi.percent = cpuUsage.usages[i + 1];
 //              mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
@@ -344,7 +349,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficBytes);
             percent = percent < 0.0f ? 0.0f : percent;
 
-            MeterInfo& mi = addMeter(meters);
+            MeterInfo& mi = netMeterOut;
             mi.percent = percent;
             mi.label.Format(L"▲ %.1f KB/s", outb);
             mi.colors = netColors;
@@ -356,13 +361,27 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             float percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficBytes);
             percent = percent < 0.0f ? 0.0f : percent;
 
-            MeterInfo& mi = addMeter(meters);
+            MeterInfo& mi = netMeterIn;
             mi.percent = percent;
             mi.label.Format(L"▼ %.1f KB/s", inb);
             mi.colors = netColors;
             mi.guides = netGuides;
         }
     }
+
+
+    //--------------------------------------------------
+    // 描画順序に合わせて詰める
+    //--------------------------------------------------
+    std::vector<MeterInfo*> meters;
+    meters.push_back(&cpuMeter);
+    meters.push_back(&memoryMeter);
+    for (size_t i = 0; i < coreMeters.size(); i++) {
+        meters.push_back(&coreMeters[i]);
+    }
+    meters.push_back(&netMeterIn);
+    meters.push_back(&netMeterOut);
+
 
     //--------------------------------------------------
     // 各メーターの描画
@@ -378,8 +397,8 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         float remainWidth = width;
         float hRow = 0;
 
-        for (const auto& mi : meters) {
-            float size = boxSize / mi.div;
+        for (const MeterInfo* pmi : meters) {
+            float size = boxSize / pmi->div;
 
             // 幅が足りなくなったら次の行へ
             if (remainWidth < size) {
@@ -402,7 +421,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             }
 
             D2D1_RECT_F rect = D2D1::RectF(x, y, x + size, y + size);
-            DrawMeter(rect, mi.div == 1 ? 1.0f : 1.4f, mi);
+            DrawMeter(rect, pmi->div == 1 ? 1.0f : 1.4f, *pmi);
 
             x += size;
             remainWidth -= size;
