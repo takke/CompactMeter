@@ -19,6 +19,14 @@ struct MeterInfo {
     float percent;
     MeterColor* colors;
     MeterGuide* guides;
+    int div;            // 分割数(1 or 2 or 4)
+    
+    MeterInfo()
+        :percent(0.0f)
+        ,colors(NULL)
+        ,guides(NULL)
+        ,div(1)
+    {}
 };
 
 

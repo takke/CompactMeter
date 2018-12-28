@@ -300,6 +300,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
                 mi.label.Format(L"Core%d", i + 1);
                 mi.colors = cpuColors;
                 mi.guides = cpuGuides;
+                mi.div = 2;
             }
         }
     }
@@ -367,85 +368,47 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     // 各メーターの描画
     //--------------------------------------------------
 
-    //--------------------------------------------------
-    // CPU+Memory タコメーター描画
-    //--------------------------------------------------
-
-    int iMeter = 0;
-
-    // 各ウィジェットのサイズ(width, height)
-    float size = screenWidth / 2.0f / g_dpiScale;
-
     float y = 0;
-    float height = size;
+    // 各ウィジェットの標準サイズ(width, height)
+    float boxSize = screenWidth / 2.0f / g_dpiScale;     // box size
 
-    // 全コアの合計
     {
-        D2D1_RECT_F rect = D2D1::RectF(0, 0, size, size);
-        DrawMeter(rect, 1, meters[iMeter]);
-        iMeter++;
-    }
-
-    // メモリ使用量
-    {
-        D2D1_RECT_F rect = D2D1::RectF(size, 0, size + size, size);
-        DrawMeter(rect, 1, meters[iMeter]);
-        iMeter++;
-    }
-    y += height;
-
-    // 各Core
-    if (g_pIniConfig->mShowCoreMeters) {
-        int div = 4;
-        float scale = 2.0f / div;    // 1.0 or 0.5
-        float coreSize = size * scale;
         float x = 0;
-        for (int i = 0; i < nCore; i++) {
-            if (i % div == 0) {
-                // 左側
+        const float width = screenWidth / g_dpiScale;
+        float remainWidth = width;
+        float hRow = 0;
+
+        for (const auto& mi : meters) {
+            float size = boxSize / mi.div;
+
+            // 幅が足りなくなったら次の行へ
+            if (remainWidth < size) {
+                remainWidth = width;
+
+                // 「前の行で一番大きかった高さ」分だけ増やす
+                y += hRow;
                 x = 0;
-                if (i != 0) {
-                    y += coreSize;
-                }
-                if (y + coreSize >= screenHeight) {
+                hRow = 0;
+
+                // この行を描画できなさそうなら終了
+                if (y + size >= screenHeight / g_dpiScale) {
                     return;
                 }
             }
-            else {
-                // 右側
-                x += coreSize;
+
+            // この行の高さを更新
+            if (size >= hRow) {
+                hRow = size;
             }
 
-            D2D1_RECT_F rect = D2D1::RectF(x, y, x + coreSize, y + coreSize);
+            D2D1_RECT_F rect = D2D1::RectF(x, y, x + size, y + size);
+            DrawMeter(rect, mi.div == 1 ? 1.0f : 1.4f, mi);
 
-            DrawMeter(rect, 1.4f, meters[iMeter]);
-            iMeter++;
+            x += size;
+            remainWidth -= size;
         }
-        y += coreSize;
+        y += hRow;
     }
-    if (y + size >= screenHeight) {
-        return;
-    }
-
-
-    //--------------------------------------------------
-    // Network タコメーター描画
-    //--------------------------------------------------
-    // Up(KB単位)
-    {
-        D2D1_RECT_F rect = D2D1::RectF(0, y, size, y + size);
-        DrawMeter(rect, 1.0f, meters[iMeter]);
-        iMeter++;
-    }
-
-    // Down(KB単位)
-    {
-        D2D1_RECT_F rect = D2D1::RectF(size, y, size + size, y + size);
-        DrawMeter(rect, 1.0f, meters[iMeter]);
-        iMeter++;
-        y += height * 1;
-    }
-
 
     //--------------------------------------------------
     // デバッグ表示
@@ -479,7 +442,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             , iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps
             , pWorker->traffics.size(), screenWidth, screenHeight
             , (LPCTSTR)strDateTime
-            , size
+            , boxSize
             , g_dpix, g_dpiy, g_dpiScale
             , duration1 / 1000.0
             , duration2 / 1000.0
