@@ -225,79 +225,176 @@ void MeterDrawer::Draw(HWND hWnd, CWorker* pWorker)
 
 void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight)
 {
-    D2D1_RECT_F rect;
+    //--------------------------------------------------
+    // 各メーター情報の収集
+    //--------------------------------------------------
+    std::vector<MeterInfo> meters;
+    int nCore = 0;
 
-    CString str;
-    // 各ウィジェットのサイズ(width, height)
-    float size = screenWidth / 2.0f / g_dpiScale;
+    // CPU+Memory
+    {
+        static MeterColor cpuColors[] = {
+            { 90.0, D2D1::ColorF(0xFF4040) },
+            { 80.0, D2D1::ColorF(0xFF8040) },
+            { 70.0, D2D1::ColorF(0xC0C040) },
+            {  0.0, D2D1::ColorF(0xC0C0C0) }
+        };
+        static MeterGuide cpuGuides[] = {
+            { 100.0, D2D1::ColorF(0xFF4040), L"" },
+            {  90.0, D2D1::ColorF(0xFF4040), L"" },
+            {  80.0, D2D1::ColorF(0xFF4040), L"" },
+            {  70.0, D2D1::ColorF(0xFF4040), L"" },
+            {  60.0, D2D1::ColorF(0xC0C0C0), L"" },
+            {  50.0, D2D1::ColorF(0xC0C0C0), L"" },
+            {  40.0, D2D1::ColorF(0xC0C0C0), L"" },
+            {  30.0, D2D1::ColorF(0xC0C0C0), L"" },
+            {  20.0, D2D1::ColorF(0xC0C0C0), L"" },
+            {  10.0, D2D1::ColorF(0xC0C0C0), L"" },
+            {   0.0, D2D1::ColorF(0xC0C0C0), L"" },
+        };
 
-    // 試しにDPIを設定してみる
-//    m_pRenderTarget->SetDpi(96.0f, 96.0f);
+        CpuUsage cpuUsage;
+        nCore = pWorker->GetCpuUsage(&cpuUsage);
 
+        // 全コアの合計
+        {
+            MeterInfo& mi = addMeter(meters);
+
+            mi.percent = cpuUsage.usages[0];
+            mi.label.Format(L"CPU (%.0f%%)", mi.percent);
+            mi.colors = cpuColors;
+            mi.guides = cpuGuides;
+        }
+
+        // メモリ使用量
+        {
+            MEMORYSTATUSEX ms;
+
+            ms.dwLength = sizeof(ms);
+            GlobalMemoryStatusEx(&ms);
+
+            //printf("dwMemoryLoad     %d\n", ms.dwMemoryLoad);
+            //printf("ullTotalPhys     %I64d\n", ms.ullTotalPhys);         // 物理メモリの搭載容量
+            //printf("ullAvailPhys     %I64d\n", ms.ullAvailPhys);         // 物理メモリの空き容量
+            //printf("ullTotalPageFile %I64d\n", ms.ullTotalPageFile);     // ページングの搭載容量
+            //printf("ullAvailPageFile %I64d\n", ms.ullAvailPageFile);     // ページングの空き容量
+            //printf("ullTotalVirtual  %I64d\n", ms.ullTotalVirtual);      // 仮想メモリの搭載容量
+            //printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
+
+            DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
+
+            MeterInfo& mi = addMeter(meters);
+            mi.percent = ullUsing * 100.0f / ms.ullTotalPhys;
+            mi.label.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", mi.percent, ullUsing / 1024 / 1024, ms.ullTotalPhys / 1024 / 1024);
+            mi.colors = cpuColors;
+            mi.guides = cpuGuides;
+        }
+
+        // 各Core
+        if (g_pIniConfig->mShowCoreMeters) {
+            for (int i = 0; i < nCore; i++) {
+                MeterInfo& mi = addMeter(meters);
+
+                mi.percent = cpuUsage.usages[i + 1];
+//              mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
+                mi.label.Format(L"Core%d", i + 1);
+                mi.colors = cpuColors;
+                mi.guides = cpuGuides;
+            }
+        }
+    }
+
+    // Network
+    {
+        DWORD maxTrafficBytes = g_pIniConfig->mTrafficMax;
+
+        const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
+        const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
+
+        DWORD duration = t.tick - t0.tick;
+
+        // duration が ms なので *1000 してから除算
+        float inb = (t.in - t0.in) * 1000.0f / duration;
+        float outb = (t.out - t0.out) * 1000.0f / duration;
+
+        // KB単位
+        maxTrafficBytes /= 1000;
+        inb /= 1000;
+        outb /= 1000;
+
+        MeterColor netColors[] = {
+            { KbToPercent(1000, maxTrafficBytes), D2D1::ColorF(0xFF4040) },
+            { KbToPercent( 100, maxTrafficBytes), D2D1::ColorF(0XFF8040) },
+            { KbToPercent(  10, maxTrafficBytes), D2D1::ColorF(0xC0C040) },
+            {                                0.0, D2D1::ColorF(0xC0C0C0) }
+        };
+        MeterGuide netGuides[] = {
+            { KbToPercent(1000000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1G"   },
+            { KbToPercent( 100000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"100M" },
+            { KbToPercent(  10000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"10M"  },
+            { KbToPercent(   1000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1M"   },
+            { KbToPercent(    100, maxTrafficBytes), D2D1::ColorF(0xFF8040), L"100K" },
+            { KbToPercent(     10, maxTrafficBytes), D2D1::ColorF(0xC0C040), L"10K"  },
+            {                                   0.0, D2D1::ColorF(0xC0C0C0), L""     },
+        };
+
+        // Up(KB単位)
+        {
+            float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficBytes);
+            percent = percent < 0.0f ? 0.0f : percent;
+
+            MeterInfo& mi = addMeter(meters);
+            mi.percent = percent;
+            mi.label.Format(L"▲ %.1f KB/s", outb);
+            mi.colors = netColors;
+            mi.guides = netGuides;
+        }
+
+        // Down(KB単位)
+        {
+            float percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficBytes);
+            percent = percent < 0.0f ? 0.0f : percent;
+
+            MeterInfo& mi = addMeter(meters);
+            mi.percent = percent;
+            mi.label.Format(L"▼ %.1f KB/s", inb);
+            mi.colors = netColors;
+            mi.guides = netGuides;
+        }
+    }
+
+    //--------------------------------------------------
+    // 各メーターの描画
+    //--------------------------------------------------
 
     //--------------------------------------------------
     // CPU+Memory タコメーター描画
     //--------------------------------------------------
-    static MeterColor cpuColors[] = {
-        { 90.0, D2D1::ColorF(0xFF4040) },
-        { 80.0, D2D1::ColorF(0xFF8040) },
-        { 70.0, D2D1::ColorF(0xC0C040) },
-        {  0.0, D2D1::ColorF(0xC0C0C0) }
-    };
-    static MeterGuide cpuGuides[] = {
-        { 100.0, D2D1::ColorF(0xFF4040), L"" },
-        {  90.0, D2D1::ColorF(0xFF4040), L"" },
-        {  80.0, D2D1::ColorF(0xFF4040), L"" },
-        {  70.0, D2D1::ColorF(0xFF4040), L"" },
-        {  60.0, D2D1::ColorF(0xC0C0C0), L"" },
-        {  50.0, D2D1::ColorF(0xC0C0C0), L"" },
-        {  40.0, D2D1::ColorF(0xC0C0C0), L"" },
-        {  30.0, D2D1::ColorF(0xC0C0C0), L"" },
-        {  20.0, D2D1::ColorF(0xC0C0C0), L"" },
-        {  10.0, D2D1::ColorF(0xC0C0C0), L"" },
-        {   0.0, D2D1::ColorF(0xC0C0C0), L"" },
-    };
 
-    CpuUsage cpuUsage;
-    int nCore = pWorker->GetCpuUsage(&cpuUsage);
+    int iMeter = 0;
+
+    // 各ウィジェットのサイズ(width, height)
+    float size = screenWidth / 2.0f / g_dpiScale;
 
     float y = 0;
     float height = size;
 
     // 全コアの合計
     {
-        rect = D2D1::RectF(0, 0, size, size);
-        float percent = cpuUsage.usages[0];
-        str.Format(L"CPU (%.0f%%)", percent);
-        DrawMeter(rect, percent, str, cpuColors, cpuGuides, 1);
+        D2D1_RECT_F rect = D2D1::RectF(0, 0, size, size);
+        DrawMeter(rect, 1, meters[iMeter]);
+        iMeter++;
     }
 
     // メモリ使用量
     {
-        MEMORYSTATUSEX ms;
-
-        ms.dwLength = sizeof(ms);
-        GlobalMemoryStatusEx(&ms);
-
-        //printf("dwMemoryLoad     %d\n", ms.dwMemoryLoad);
-        //printf("ullTotalPhys     %I64d\n", ms.ullTotalPhys);         // 物理メモリの搭載容量
-        //printf("ullAvailPhys     %I64d\n", ms.ullAvailPhys);         // 物理メモリの空き容量
-        //printf("ullTotalPageFile %I64d\n", ms.ullTotalPageFile);     // ページングの搭載容量
-        //printf("ullAvailPageFile %I64d\n", ms.ullAvailPageFile);     // ページングの空き容量
-        //printf("ullTotalVirtual  %I64d\n", ms.ullTotalVirtual);      // 仮想メモリの搭載容量
-        //printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
-
-        rect = D2D1::RectF(size, 0, size + size, size);
-        DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
-        float percent = ullUsing * 100.0f / ms.ullTotalPhys;
-        str.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", percent, ullUsing / 1024 / 1024, ms.ullTotalPhys / 1024 / 1024);
-        DrawMeter(rect, percent, str, cpuColors, cpuGuides, 1);
+        D2D1_RECT_F rect = D2D1::RectF(size, 0, size + size, size);
+        DrawMeter(rect, 1, meters[iMeter]);
+        iMeter++;
     }
     y += height;
 
-    //--------------------------------------------------
     // 各Core
-    //--------------------------------------------------
     if (g_pIniConfig->mShowCoreMeters) {
         int div = 4;
         float scale = 2.0f / div;    // 1.0 or 0.5
@@ -318,11 +415,11 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
                 // 右側
                 x += coreSize;
             }
-            rect = D2D1::RectF(x, y, x + coreSize, y + coreSize);
-            float percent = cpuUsage.usages[i + 1];
-//          str.Format(L"Core%d (%.0f%%)", i + 1, percent);
-            str.Format(L"Core%d", i + 1);
-            DrawMeter(rect, percent, str, cpuColors, cpuGuides, 1.4f);
+
+            D2D1_RECT_F rect = D2D1::RectF(x, y, x + coreSize, y + coreSize);
+
+            DrawMeter(rect, 1.4f, meters[iMeter]);
+            iMeter++;
         }
         y += coreSize;
     }
@@ -334,53 +431,20 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     // Network タコメーター描画
     //--------------------------------------------------
-    DWORD maxTrafficBytes = g_pIniConfig->mTrafficMax;
-    float percent = 0.0f;
-
-    const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
-    const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
-
-    DWORD duration = t.tick - t0.tick;
-
-    // duration が ms なので *1000 してから除算
-    float inb = (t.in - t0.in) * 1000.0f / duration;
-    float outb = (t.out - t0.out) * 1000.0f / duration;
-
-    // KB単位
-    maxTrafficBytes /= 1000;
-    inb /= 1000;
-    outb /= 1000;
-
-    MeterColor netColors[] = {
-        { KbToPercent(1000, maxTrafficBytes), D2D1::ColorF(0xFF4040) },
-        { KbToPercent( 100, maxTrafficBytes), D2D1::ColorF(0XFF8040) },
-        { KbToPercent(  10, maxTrafficBytes), D2D1::ColorF(0xC0C040) },
-        {                                0.0, D2D1::ColorF(0xC0C0C0) }
-    };
-    MeterGuide netGuides[] = {
-        { KbToPercent(1000000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1G"   },
-        { KbToPercent( 100000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"100M" },
-        { KbToPercent(  10000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"10M"  },
-        { KbToPercent(   1000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1M"   },
-        { KbToPercent(    100, maxTrafficBytes), D2D1::ColorF(0xFF8040), L"100K" },
-        { KbToPercent(     10, maxTrafficBytes), D2D1::ColorF(0xC0C040), L"10K"  },
-        {                                   0.0, D2D1::ColorF(0xC0C0C0), L""     },
-    };
-
     // Up(KB単位)
-    rect = D2D1::RectF(0, y, size, y + size);
-    percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficBytes);
-    percent = percent < 0.0f ? 0.0f : percent;
-    str.Format(L"▲ %.1f KB/s", outb);
-    DrawMeter(rect, percent, str, netColors, netGuides, 1);
+    {
+        D2D1_RECT_F rect = D2D1::RectF(0, y, size, y + size);
+        DrawMeter(rect, 1.0f, meters[iMeter]);
+        iMeter++;
+    }
 
     // Down(KB単位)
-    rect = D2D1::RectF(size, y, size + size, y + size);
-    percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficBytes);
-    percent = percent < 0.0f ? 0.0f : percent;
-    str.Format(L"▼ %.1f KB/s", inb);
-    DrawMeter(rect, percent, str, netColors, netGuides, 1);
-    y += height * 1;
+    {
+        D2D1_RECT_F rect = D2D1::RectF(size, y, size + size, y + size);
+        DrawMeter(rect, 1.0f, meters[iMeter]);
+        iMeter++;
+        y += height * 1;
+    }
 
 
     //--------------------------------------------------
@@ -404,6 +468,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         DWORD duration2 = m_stopWatch2.GetAverageDurationMicroseconds();
         DWORD durationWorker = pWorker->m_stopWatch.GetAverageDurationMicroseconds();
 
+        CString str;
         str.Format(L"i=%d, FPS=%d/%d, "
             L"n=%d size=%.0fx%.0f \n"
             L"%s \n"
@@ -444,8 +509,13 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
  *
  * colors, guideLines の最後は必ず percent=0.0 にすること
  */
-void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale)
+void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo& mi)
 {
+    float percent = mi.percent;
+    const WCHAR* str = mi.label;
+    MeterColor* colors = mi.colors;
+    MeterGuide* guideLines = mi.guides;
+        
     auto size = rect.right - rect.left;
 
     if (percent < 0.0f) {

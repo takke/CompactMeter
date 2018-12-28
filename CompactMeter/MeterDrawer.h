@@ -14,6 +14,13 @@ struct MeterGuide {
     D2D1::ColorF color;
     LPCWSTR text;
 };
+struct MeterInfo {
+    CString label;
+    float percent;
+    MeterColor* colors;
+    MeterGuide* guides;
+};
+
 
 class MeterDrawer
 {
@@ -83,13 +90,18 @@ private:
 
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
-    void DrawMeter(D2D1_RECT_F& rect, float percent, const WCHAR* str, MeterColor colors[], MeterGuide guideLines[], float fontScale);
+    void DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo& mi);
     void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
     boolean CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
 
     inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
     {
         return (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
+    }
+
+    inline MeterInfo& addMeter(std::vector<MeterInfo>& meters) {
+        meters.resize(meters.size() + 1);
+        return meters[meters.size() - 1];
     }
 
 };
