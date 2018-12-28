@@ -235,6 +235,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     std::vector<MeterInfo> coreMeters;
     MeterInfo netMeterIn;
     MeterInfo netMeterOut;
+    std::vector<MeterInfo> driveMeters;
 
     // CPU+Memory
     {
@@ -309,9 +310,62 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         }
     }
 
+    // Drive
+    if (pWorker->driveUsages.size() >= 1) {
+        DriveUsage driveUsage;
+        pWorker->GetDriveUsages(&driveUsage);
+
+        size_t nDrive = driveUsage.letters.size();
+
+        long maxDriveKB = 10 * 1024 * 1024;
+        MeterColor driveColors[] = {
+            { KbToPercent(100000, maxDriveKB), D2D1::ColorF(0xFF4040) },
+            { KbToPercent( 10000, maxDriveKB), D2D1::ColorF(0XFF8040) },
+            { KbToPercent(  1000, maxDriveKB), D2D1::ColorF(0xC0C040) },
+            {                             0.0, D2D1::ColorF(0xC0C0C0) }
+        };
+        MeterGuide driveGuides[] = {
+            { KbToPercent(10000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G"   },
+            { KbToPercent( 1000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"1G"   },
+            { KbToPercent(  100000, maxDriveKB), D2D1::ColorF(0xFF4040), L"100M" },
+            { KbToPercent(   10000, maxDriveKB), D2D1::ColorF(0xFF8040), L"10M"  },
+            { KbToPercent(    1000, maxDriveKB), D2D1::ColorF(0xC0C040), L"1M"   },
+            { KbToPercent(     100, maxDriveKB), D2D1::ColorF(0xC0C040), L"100K" },
+            { KbToPercent(      10, maxDriveKB), D2D1::ColorF(0xC0C040), L"10K"  },
+            {                               0.0, D2D1::ColorF(0xC0C0C0), L""     },
+        };
+
+        for (size_t i = 0; i < nDrive; i++) {
+
+            // Write
+            {
+                MeterInfo& mi = addMeter(driveMeters);
+
+                long kb = driveUsage.writeUsages[i] / 1024;
+                mi.percent = KbToPercentL(kb, maxDriveKB);
+                mi.label.Format(L"%c: Write ", driveUsage.letters[i]);
+                AppendFormatOfKb(kb, mi);
+                mi.colors = driveColors;
+                mi.guides = driveGuides;
+            }
+            // Read
+            {
+                MeterInfo& mi = addMeter(driveMeters);
+
+                long kb = driveUsage.readUsages[i] / 1024;
+                mi.percent = KbToPercentL(kb, maxDriveKB);
+                mi.label.Format(L"%c: Read ", driveUsage.letters[i]);
+                AppendFormatOfKb(kb, mi);
+                mi.colors = driveColors;
+                mi.guides = driveGuides;
+            }
+        }
+
+    }
+
     // Network
     {
-        DWORD maxTrafficBytes = g_pIniConfig->mTrafficMax;
+        DWORD maxTrafficKB = g_pIniConfig->mTrafficMax;
 
         const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
         const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
@@ -323,29 +377,29 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         float outb = (t.out - t0.out) * 1000.0f / duration;
 
         // KB単位
-        maxTrafficBytes /= 1000;
+        maxTrafficKB /= 1000;
         inb /= 1000;
         outb /= 1000;
 
         MeterColor netColors[] = {
-            { KbToPercent(1000, maxTrafficBytes), D2D1::ColorF(0xFF4040) },
-            { KbToPercent( 100, maxTrafficBytes), D2D1::ColorF(0XFF8040) },
-            { KbToPercent(  10, maxTrafficBytes), D2D1::ColorF(0xC0C040) },
-            {                                0.0, D2D1::ColorF(0xC0C0C0) }
+            { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) },
+            { KbToPercent( 100, maxTrafficKB), D2D1::ColorF(0XFF8040) },
+            { KbToPercent(  10, maxTrafficKB), D2D1::ColorF(0xC0C040) },
+            {                             0.0, D2D1::ColorF(0xC0C0C0) }
         };
         MeterGuide netGuides[] = {
-            { KbToPercent(1000000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1G"   },
-            { KbToPercent( 100000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"100M" },
-            { KbToPercent(  10000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"10M"  },
-            { KbToPercent(   1000, maxTrafficBytes), D2D1::ColorF(0xFF4040), L"1M"   },
-            { KbToPercent(    100, maxTrafficBytes), D2D1::ColorF(0xFF8040), L"100K" },
-            { KbToPercent(     10, maxTrafficBytes), D2D1::ColorF(0xC0C040), L"10K"  },
-            {                                   0.0, D2D1::ColorF(0xC0C0C0), L""     },
+            { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G"   },
+            { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" },
+            { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M"  },
+            { KbToPercent(   1000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M"   },
+            { KbToPercent(    100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" },
+            { KbToPercent(     10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K"  },
+            {                                0.0, D2D1::ColorF(0xC0C0C0), L""     },
         };
 
         // Up(KB単位)
         {
-            float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficBytes);
+            float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficKB);
             percent = percent < 0.0f ? 0.0f : percent;
 
             MeterInfo& mi = netMeterOut;
@@ -357,7 +411,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
         // Down(KB単位)
         {
-            float percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficBytes);
+            float percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficKB);
             percent = percent < 0.0f ? 0.0f : percent;
 
             MeterInfo& mi = netMeterIn;
@@ -379,8 +433,12 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         coreMeters[i].div = 2;
         meters.push_back(&coreMeters[i]);
     }
-    meters.push_back(&netMeterIn);
     meters.push_back(&netMeterOut);
+    meters.push_back(&netMeterIn);
+
+    for (size_t i = 0; i < driveMeters.size(); i++) {
+        meters.push_back(&driveMeters[i]);
+    }
 
 
     //--------------------------------------------------
@@ -495,6 +553,16 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             SafeRelease(&pTextFormat);
         }
 
+    }
+}
+
+void MeterDrawer::AppendFormatOfKb(long kb, MeterInfo & mi)
+{
+    if (kb >= 1024) {
+        mi.label.AppendFormat(L"%.1f MB/s", kb/1024.0);
+    }
+    else {
+        mi.label.AppendFormat(L"%ld KB/s", kb);
     }
 }
 

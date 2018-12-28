@@ -98,13 +98,19 @@ private:
 
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
+    void AppendFormatOfKb(long kb, MeterInfo & mi);
     void DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo& mi);
     void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
     boolean CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
 
-    inline float KbToPercent(float outb, const DWORD &maxTrafficBytes)
+    inline float KbToPercent(float kb, const DWORD &maxTrafficBytes)
     {
-        return (log10f((float)outb) / log10f((float)maxTrafficBytes))*100.0f;
+        return (log10f((float)kb) / log10f((float)maxTrafficBytes))*100.0f;
+    }
+
+    inline float KbToPercentL(long kb, const DWORD &maxTrafficBytes)
+    {
+        return (log10f((float)kb) / log10f((float)maxTrafficBytes))*100.0f;
     }
 
     inline MeterInfo& addMeter(std::vector<MeterInfo>& meters) {
