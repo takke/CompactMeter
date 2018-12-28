@@ -305,7 +305,6 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
                 mi.label.Format(L"Core%d", i + 1);
                 mi.colors = cpuColors;
                 mi.guides = cpuGuides;
-                mi.div = 2;
             }
         }
     }
@@ -377,6 +376,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     meters.push_back(&cpuMeter);
     meters.push_back(&memoryMeter);
     for (size_t i = 0; i < coreMeters.size(); i++) {
+        coreMeters[i].div = 2;
         meters.push_back(&coreMeters[i]);
     }
     meters.push_back(&netMeterIn);
@@ -421,7 +421,19 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             }
 
             D2D1_RECT_F rect = D2D1::RectF(x, y, x + size, y + size);
-            DrawMeter(rect, pmi->div == 1 ? 1.0f : 1.4f, *pmi);
+
+            // 単純に小さくすると見えなくなるので少し大きくするためのスケーリング
+            float fontScale = 1.0f;
+            switch (pmi->div) {
+            case 2:
+                fontScale = 1.4f;
+                break;
+            case 4:
+                fontScale = 2.0f;
+                break;
+            }
+
+            DrawMeter(rect, fontScale, *pmi);
 
             x += size;
             remainWidth -= size;
