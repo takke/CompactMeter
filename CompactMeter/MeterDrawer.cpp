@@ -245,7 +245,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     int nCore = 0;
 
     MeterInfo cpuMeter;
-    std::vector<MeterInfo> coreMeters;
+    MeterInfo coreMeters;
     MeterInfo memoryMeter;
     MeterInfo netMeterIn;
     MeterInfo netMeterOut;
@@ -274,10 +274,11 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             meters.push_back(&cpuMeter);
             break;
         case METER_ID_CORES:
-            for (size_t i = 0; i < coreMeters.size(); i++) {
-                coreMeters[i].div = 2;
-                meters.push_back(&coreMeters[i]);
-            }
+            meters.push_back(&coreMeters);
+            //for (size_t i = 0; i < coreMeters.size(); i++) {
+            //    coreMeters[i].div = 2;
+            //    meters.push_back(&coreMeters[i]);
+            //}
             break;
         case METER_ID_MEMORY:
             meters.push_back(&memoryMeter);
@@ -299,58 +300,15 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     // 各メーターの描画
     //--------------------------------------------------
 
-    float y = 0;
     // 各ウィジェットの標準サイズ(width, height)
     float boxSize = screenWidth / 2.0f / g_dpiScale;     // box size
+    float y = 0;
 
-    {
-        float x = 0;
-        const float width = screenWidth / g_dpiScale;
-        float remainWidth = width;
-        float hRow = 0;
+    const float width = screenWidth / g_dpiScale;
+    const float height = screenHeight / g_dpiScale;
 
-        for (const MeterInfo* pmi : meters) {
-            float size = boxSize / pmi->div;
-
-            // 幅が足りなくなったら次の行へ
-            if (remainWidth < size - 1) {       // 誤差で足りなくなる場合があるので -1 する
-                remainWidth = width;
-
-                // 「前の行で一番大きかった高さ」分だけ増やす
-                y += hRow;
-                x = 0;
-                hRow = 0;
-
-                // この行を描画できなさそうなら終了
-                if (y + size >= screenHeight / g_dpiScale) {
-                    return;
-                }
-            }
-
-            // この行の高さを更新
-            if (size >= hRow) {
-                hRow = size;
-            }
-
-            D2D1_RECT_F rect = D2D1::RectF(x, y, x + size, y + size);
-
-            // 単純に小さくすると見えなくなるので少し大きくするためのスケーリング
-            float fontScale = 1.0f;
-            switch (pmi->div) {
-            case 2:
-                fontScale = 1.4f;
-                break;
-            case 4:
-                fontScale = 2.0f;
-                break;
-            }
-
-            DrawMeter(rect, fontScale, *pmi);
-
-            x += size;
-            remainWidth -= size;
-        }
-        y += hRow;
+    if (!DrawMetersRecursive(meters, 0, boxSize, 0, y, width, height)) {
+        return;
     }
 
     //--------------------------------------------------
@@ -410,7 +368,97 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     }
 }
 
-void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, std::vector<MeterInfo> &coreMeters, MeterInfo &memoryMeter)
+/**
+ * 指定された描画範囲(x -> width, y -> height) 内に収まるように meters を描画する
+ *
+ * 各メーターが子要素を持つ場合はそれを再帰的に描画する
+ * 
+ * 描画できた要素数を返す
+ */
+int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height)
+{
+    float x = baseX;
+    float remainWidth = width;
+
+    int nDrawn = 0;
+    for (int i = startIndex; i < (int)meters.size(); i++) {
+        MeterInfo* pmi = meters[i];
+
+        float size = boxSize / pmi->div;
+
+        if (pmi->children.size() >= 1) {
+            
+            // 再帰的に実行する
+            for (int iChildren = 0; ; ) {
+
+                float y1 = y;
+                int n = DrawMetersRecursive(pmi->children, iChildren, boxSize, x, y1, boxSize, y + boxSize);
+                if (n == 0) {
+                    return nDrawn;
+                }
+                iChildren += n;
+
+                x += size;
+                remainWidth -= size;
+                nDrawn += n;
+
+                if (iChildren >= pmi->children.size()) {
+                    // 全て描画し終わったので終了
+                    break;
+                }
+                else {
+                    // children がまだ残っているので次の描画範囲に移動して継続する
+
+                    // TODO moveToNextBox() にまとめる
+                    // 幅が足りなくなったら次の行へ
+                    if (remainWidth < size - 1) {       // 誤差で足りなくなる場合があるので -1 する
+                        remainWidth = width;
+
+                        y += size;
+                        x = baseX;
+
+                        // この行を描画できなさそうなら終了
+                        if (y + size - 1 >= height) {
+                            return nDrawn;
+                        }
+                    }
+                }
+            }
+
+            continue;
+        }
+
+        //--------------------------------------------------
+        // 描画
+        //--------------------------------------------------
+        D2D1_RECT_F rect = D2D1::RectF(x, y, x + size, y + size);
+
+        DrawMeter(rect, *pmi);
+
+        x += size;
+        remainWidth -= size;
+        nDrawn++;
+
+        // 幅が足りなくなったら次の行へ
+        if (remainWidth < size - 1) {       // 誤差で足りなくなる場合があるので -1 する
+            remainWidth = width;
+
+            y += size;
+            x = baseX;
+
+            // この行を描画できなさそうなら終了
+            if (y + size - 1 >= height) {
+                return nDrawn;
+            }
+        }
+
+    }
+    y += boxSize;
+
+    return nDrawn;
+}
+
+void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, MeterInfo &coreMeters, MeterInfo &memoryMeter)
 {
     static MeterGuide cpuGuides[] = {
         { 100.0, D2D1::ColorF(0xFF4040), L"" },
@@ -441,12 +489,20 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
     // 各Core
     if (g_pIniConfig->mShowCoreMeters) {
         for (int i = 0; i < nCore; i++) {
-            MeterInfo& mi = addMeter(coreMeters);
+
+            // children はスコープ外で自動削除される
+            MeterInfo* pmi = new MeterInfo();
+            coreMeters.children.push_back(pmi);
+            MeterInfo& mi = *pmi;
 
             mi.percent = cpuUsage.usages[i + 1];
-            //              mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
+//          mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
             mi.label.Format(L"Core%d", i + 1);
             mi.guides = cpuGuides;
+            mi.div = 2;
+
+            // 仮想的に 2 コアなどを模擬するなら下記のような感じで。
+//            if (i >= 2) break;
         }
     }
 
@@ -578,8 +634,19 @@ void MeterDrawer::AppendFormatOfKb(long kb, MeterInfo & mi)
  *
  * colors, guideLines の最後は必ず percent=0.0 にすること
  */
-void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo& mi)
+void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
 {
+    // 単純に小さくすると見えなくなるので少し大きくするためのスケーリング
+    float fontScale = 1.0f;
+    switch (mi.div) {
+    case 2:
+        fontScale = 1.4f;
+        break;
+    case 4:
+        fontScale = 2.0f;
+        break;
+    }
+
     float percent = mi.percent;
     const WCHAR* str = mi.label;
     MeterGuide* guideLines = mi.guides;

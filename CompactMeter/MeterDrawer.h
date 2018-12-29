@@ -5,26 +5,44 @@
 #include "FpsCounter.h"
 #include "StopWatch.h"
 
+/**
+ * メーターのガイドラインおよびカラー変更のしきい値
+ */
 struct MeterGuide {
     float percent;
     D2D1::ColorF color;
     LPCWSTR text;
     
-    MeterGuide() : percent(0.0f), color(0x000000), text(L"") {}
+    MeterGuide()
+        : percent(0.0f), color(0x000000), text(L"") {}
     MeterGuide(float percent_, D2D1::ColorF color_, LPCWSTR text_)
         : percent(percent_), color(color_), text(text_) {}
 };
+
+/**
+ * メーターの描画データ
+ */
 struct MeterInfo {
+
+    std::vector<MeterInfo*> children;   // 子要素を持つ場合は size() >= 1
+
     CString label;
     float percent;
     MeterGuide* guides;
     int div;            // 分割数(1 or 2 or 4)
-    
+
     MeterInfo()
-        :percent(0.0f)
-        ,guides(NULL)
-        ,div(1)
+        : percent(0.0f)
+        , guides(NULL)
+        , div(1)
     {}
+
+    ~MeterInfo() {
+        // children は動的に確保されるのでスコープ外で自動削除
+        for (size_t i = 0; i < children.size(); i++) {
+            delete children[i];
+        }
+    }
 };
 
 
@@ -52,6 +70,8 @@ private:
     // DirectWrite(DeviceIndependent)
     IDWriteFactory*        m_pDWFactory;
 
+    // ネットワークメーターのガイドライン
+    // (設定値に依存するのでメンバーとして保持する)
     MeterGuide m_netGuides[10];
 
 public:
@@ -102,12 +122,14 @@ private:
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
 
+    int DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height);
+
     void MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn);
-    void MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, std::vector<MeterInfo> &coreMeters, MeterInfo &memoryInfo);
+    void MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, MeterInfo &coreMeters, MeterInfo &memoryInfo);
     void MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &driveMeters);
 
     void AppendFormatOfKb(long kb, MeterInfo & mi);
-    void DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo& mi);
+    void DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi);
     void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
     boolean CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
 
