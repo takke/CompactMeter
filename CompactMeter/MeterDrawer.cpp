@@ -238,189 +238,13 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     std::vector<MeterInfo> driveMeters;
 
     // CPU+Memory
-    {
-        static MeterColor cpuColors[] = {
-            { 90.0, D2D1::ColorF(0xFF4040) },
-            { 80.0, D2D1::ColorF(0xFF8040) },
-            { 70.0, D2D1::ColorF(0xC0C040) },
-            {  0.0, D2D1::ColorF(0xC0C0C0) }
-        };
-        static MeterGuide cpuGuides[] = {
-            { 100.0, D2D1::ColorF(0xFF4040), L"" },
-            {  90.0, D2D1::ColorF(0xFF4040), L"" },
-            {  80.0, D2D1::ColorF(0xFF4040), L"" },
-            {  70.0, D2D1::ColorF(0xFF4040), L"" },
-            {  60.0, D2D1::ColorF(0xC0C0C0), L"" },
-            {  50.0, D2D1::ColorF(0xC0C0C0), L"" },
-            {  40.0, D2D1::ColorF(0xC0C0C0), L"" },
-            {  30.0, D2D1::ColorF(0xC0C0C0), L"" },
-            {  20.0, D2D1::ColorF(0xC0C0C0), L"" },
-            {  10.0, D2D1::ColorF(0xC0C0C0), L"" },
-            {   0.0, D2D1::ColorF(0xC0C0C0), L"" },
-        };
-
-        CpuUsage cpuUsage;
-        nCore = pWorker->GetCpuUsage(&cpuUsage);
-
-        // 全コアの合計
-        {
-            MeterInfo& mi = cpuMeter;
-
-            mi.percent = cpuUsage.usages[0];
-            mi.label.Format(L"CPU (%.0f%%)", mi.percent);
-            mi.colors = cpuColors;
-            mi.guides = cpuGuides;
-        }
-
-        // メモリ使用量
-        {
-            MEMORYSTATUSEX ms;
-
-            ms.dwLength = sizeof(ms);
-            GlobalMemoryStatusEx(&ms);
-
-            //printf("dwMemoryLoad     %d\n", ms.dwMemoryLoad);
-            //printf("ullTotalPhys     %I64d\n", ms.ullTotalPhys);         // 物理メモリの搭載容量
-            //printf("ullAvailPhys     %I64d\n", ms.ullAvailPhys);         // 物理メモリの空き容量
-            //printf("ullTotalPageFile %I64d\n", ms.ullTotalPageFile);     // ページングの搭載容量
-            //printf("ullAvailPageFile %I64d\n", ms.ullAvailPageFile);     // ページングの空き容量
-            //printf("ullTotalVirtual  %I64d\n", ms.ullTotalVirtual);      // 仮想メモリの搭載容量
-            //printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
-
-            DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
-
-            MeterInfo& mi = memoryMeter;
-            mi.percent = ullUsing * 100.0f / ms.ullTotalPhys;
-            mi.label.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", mi.percent, ullUsing / 1024 / 1024, ms.ullTotalPhys / 1024 / 1024);
-            mi.colors = cpuColors;
-            mi.guides = cpuGuides;
-        }
-
-        // 各Core
-        if (g_pIniConfig->mShowCoreMeters) {
-            for (int i = 0; i < nCore; i++) {
-                MeterInfo& mi = addMeter(coreMeters);
-
-                mi.percent = cpuUsage.usages[i + 1];
-//              mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
-                mi.label.Format(L"Core%d", i + 1);
-                mi.colors = cpuColors;
-                mi.guides = cpuGuides;
-            }
-        }
-    }
+    MakeCpuMemoryMeterInfo(nCore, pWorker, cpuMeter, coreMeters);
 
     // Drive
-    if (pWorker->driveUsages.size() >= 1) {
-        DriveUsage driveUsage;
-        pWorker->GetDriveUsages(&driveUsage);
-
-        size_t nDrive = driveUsage.letters.size();
-
-        long maxDriveKB = 10 * 1024 * 1024;
-        MeterColor driveColors[] = {
-            { KbToPercent(100000, maxDriveKB), D2D1::ColorF(0xFF4040) },
-            { KbToPercent( 10000, maxDriveKB), D2D1::ColorF(0XFF8040) },
-            { KbToPercent(  1000, maxDriveKB), D2D1::ColorF(0xC0C040) },
-            {                             0.0, D2D1::ColorF(0xC0C0C0) }
-        };
-        MeterGuide driveGuides[] = {
-            { KbToPercent(10000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G"   },
-            { KbToPercent( 1000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"1G"   },
-            { KbToPercent(  100000, maxDriveKB), D2D1::ColorF(0xFF4040), L"100M" },
-            { KbToPercent(   10000, maxDriveKB), D2D1::ColorF(0xFF8040), L"10M"  },
-            { KbToPercent(    1000, maxDriveKB), D2D1::ColorF(0xC0C040), L"1M"   },
-            { KbToPercent(     100, maxDriveKB), D2D1::ColorF(0xC0C040), L"100K" },
-            { KbToPercent(      10, maxDriveKB), D2D1::ColorF(0xC0C040), L"10K"  },
-            {                               0.0, D2D1::ColorF(0xC0C0C0), L""     },
-        };
-
-        for (size_t i = 0; i < nDrive; i++) {
-
-            // Write
-            {
-                MeterInfo& mi = addMeter(driveMeters);
-
-                long kb = driveUsage.writeUsages[i] / 1024;
-                mi.percent = KbToPercentL(kb, maxDriveKB);
-                mi.label.Format(L"%c: Write ", driveUsage.letters[i]);
-                AppendFormatOfKb(kb, mi);
-                mi.colors = driveColors;
-                mi.guides = driveGuides;
-            }
-            // Read
-            {
-                MeterInfo& mi = addMeter(driveMeters);
-
-                long kb = driveUsage.readUsages[i] / 1024;
-                mi.percent = KbToPercentL(kb, maxDriveKB);
-                mi.label.Format(L"%c: Read ", driveUsage.letters[i]);
-                AppendFormatOfKb(kb, mi);
-                mi.colors = driveColors;
-                mi.guides = driveGuides;
-            }
-        }
-
-    }
+    MakeDriveMeterInfo(pWorker, driveMeters);
 
     // Network
-    {
-        DWORD maxTrafficKB = g_pIniConfig->mTrafficMax;
-
-        const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
-        const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
-
-        DWORD duration = t.tick - t0.tick;
-
-        // duration が ms なので *1000 してから除算
-        float inb = (t.in - t0.in) * 1000.0f / duration;
-        float outb = (t.out - t0.out) * 1000.0f / duration;
-
-        // KB単位
-        maxTrafficKB /= 1000;
-        inb /= 1000;
-        outb /= 1000;
-
-        MeterColor netColors[] = {
-            { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) },
-            { KbToPercent( 100, maxTrafficKB), D2D1::ColorF(0XFF8040) },
-            { KbToPercent(  10, maxTrafficKB), D2D1::ColorF(0xC0C040) },
-            {                             0.0, D2D1::ColorF(0xC0C0C0) }
-        };
-        MeterGuide netGuides[] = {
-            { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G"   },
-            { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" },
-            { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M"  },
-            { KbToPercent(   1000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M"   },
-            { KbToPercent(    100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" },
-            { KbToPercent(     10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K"  },
-            {                                0.0, D2D1::ColorF(0xC0C0C0), L""     },
-        };
-
-        // Up(KB単位)
-        {
-            float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficKB);
-            percent = percent < 0.0f ? 0.0f : percent;
-
-            MeterInfo& mi = netMeterOut;
-            mi.percent = percent;
-            mi.label.Format(L"▲ %.1f KB/s", outb);
-            mi.colors = netColors;
-            mi.guides = netGuides;
-        }
-
-        // Down(KB単位)
-        {
-            float percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficKB);
-            percent = percent < 0.0f ? 0.0f : percent;
-
-            MeterInfo& mi = netMeterIn;
-            mi.percent = percent;
-            mi.label.Format(L"▼ %.1f KB/s", inb);
-            mi.colors = netColors;
-            mi.guides = netGuides;
-        }
-    }
+    MakeNetworkMeterInfo(pWorker, netMeterOut, netMeterIn);
 
 
     //--------------------------------------------------
@@ -553,6 +377,195 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             SafeRelease(&pTextFormat);
         }
 
+    }
+}
+
+void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, std::vector<MeterInfo> &coreMeters, MeterInfo &memoryMeter)
+{
+    static MeterColor cpuColors[] = {
+        { 90.0, D2D1::ColorF(0xFF4040) },
+        { 80.0, D2D1::ColorF(0xFF8040) },
+        { 70.0, D2D1::ColorF(0xC0C040) },
+        {  0.0, D2D1::ColorF(0xC0C0C0) }
+    };
+
+    static MeterGuide cpuGuides[] = {
+        { 100.0, D2D1::ColorF(0xFF4040), L"" },
+        {  90.0, D2D1::ColorF(0xFF4040), L"" },
+        {  80.0, D2D1::ColorF(0xFF4040), L"" },
+        {  70.0, D2D1::ColorF(0xFF4040), L"" },
+        {  60.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  50.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  40.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  30.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  20.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {  10.0, D2D1::ColorF(0xC0C0C0), L"" },
+        {   0.0, D2D1::ColorF(0xC0C0C0), L"" },
+    };
+
+    CpuUsage cpuUsage;
+    nCore = pWorker->GetCpuUsage(&cpuUsage);
+
+    // 全コアの合計
+    {
+        MeterInfo& mi = cpuMeter;
+
+        mi.percent = cpuUsage.usages[0];
+        mi.label.Format(L"CPU (%.0f%%)", mi.percent);
+        mi.colors = cpuColors;
+        mi.guides = cpuGuides;
+    }
+
+    // 各Core
+    if (g_pIniConfig->mShowCoreMeters) {
+        for (int i = 0; i < nCore; i++) {
+            MeterInfo& mi = addMeter(coreMeters);
+
+            mi.percent = cpuUsage.usages[i + 1];
+            //              mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
+            mi.label.Format(L"Core%d", i + 1);
+            mi.colors = cpuColors;
+            mi.guides = cpuGuides;
+        }
+    }
+
+    // メモリ使用量
+    {
+        MEMORYSTATUSEX ms;
+
+        ms.dwLength = sizeof(ms);
+        GlobalMemoryStatusEx(&ms);
+
+        //printf("dwMemoryLoad     %d\n", ms.dwMemoryLoad);
+        //printf("ullTotalPhys     %I64d\n", ms.ullTotalPhys);         // 物理メモリの搭載容量
+        //printf("ullAvailPhys     %I64d\n", ms.ullAvailPhys);         // 物理メモリの空き容量
+        //printf("ullTotalPageFile %I64d\n", ms.ullTotalPageFile);     // ページングの搭載容量
+        //printf("ullAvailPageFile %I64d\n", ms.ullAvailPageFile);     // ページングの空き容量
+        //printf("ullTotalVirtual  %I64d\n", ms.ullTotalVirtual);      // 仮想メモリの搭載容量
+        //printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
+
+        DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
+
+        MeterInfo& mi = memoryMeter;
+        mi.percent = ullUsing * 100.0f / ms.ullTotalPhys;
+        mi.label.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", mi.percent, ullUsing / 1024 / 1024, ms.ullTotalPhys / 1024 / 1024);
+        mi.colors = cpuColors;
+        mi.guides = cpuGuides;
+    }
+}
+
+void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &driveMeters)
+{
+    if (pWorker->driveUsages.size() == 0) {
+        return;
+    }
+
+    DriveUsage driveUsage;
+    pWorker->GetDriveUsages(&driveUsage);
+
+    size_t nDrive = driveUsage.letters.size();
+
+    long maxDriveKB = 10 * 1024 * 1024;
+    MeterColor driveColors[] = {
+        { KbToPercent(100000, maxDriveKB), D2D1::ColorF(0xFF4040) },
+        { KbToPercent( 10000, maxDriveKB), D2D1::ColorF(0XFF8040) },
+        { KbToPercent(  1000, maxDriveKB), D2D1::ColorF(0xC0C040) },
+        {                             0.0, D2D1::ColorF(0xC0C0C0) }
+    };
+    MeterGuide driveGuides[] = {
+        { KbToPercent(10000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G" },
+        { KbToPercent( 1000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"1G" },
+        { KbToPercent(  100000, maxDriveKB), D2D1::ColorF(0xFF4040), L"100M" },
+        { KbToPercent(   10000, maxDriveKB), D2D1::ColorF(0xFF8040), L"10M" },
+        { KbToPercent(    1000, maxDriveKB), D2D1::ColorF(0xC0C040), L"1M" },
+        { KbToPercent(     100, maxDriveKB), D2D1::ColorF(0xC0C040), L"100K" },
+        { KbToPercent(      10, maxDriveKB), D2D1::ColorF(0xC0C040), L"10K" },
+        {                               0.0, D2D1::ColorF(0xC0C0C0), L"" },
+    };
+
+    for (size_t i = 0; i < nDrive; i++) {
+
+        // Write
+        {
+            MeterInfo& mi = addMeter(driveMeters);
+
+            long kb = driveUsage.writeUsages[i] / 1024;
+            mi.percent = KbToPercentL(kb, maxDriveKB);
+            mi.label.Format(L"%c: Write ", driveUsage.letters[i]);
+            AppendFormatOfKb(kb, mi);
+            mi.colors = driveColors;
+            mi.guides = driveGuides;
+        }
+        // Read
+        {
+            MeterInfo& mi = addMeter(driveMeters);
+
+            long kb = driveUsage.readUsages[i] / 1024;
+            mi.percent = KbToPercentL(kb, maxDriveKB);
+            mi.label.Format(L"%c: Read ", driveUsage.letters[i]);
+            AppendFormatOfKb(kb, mi);
+            mi.colors = driveColors;
+            mi.guides = driveGuides;
+        }
+    }
+}
+
+void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn)
+{
+    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax;
+
+    const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
+    const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
+
+    DWORD duration = t.tick - t0.tick;
+
+    // duration が ms なので *1000 してから除算
+    float inb = (t.in - t0.in) * 1000.0f / duration;
+    float outb = (t.out - t0.out) * 1000.0f / duration;
+
+    // KB単位
+    maxTrafficKB /= 1000;
+    inb /= 1000;
+    outb /= 1000;
+
+    MeterColor netColors[] = {
+        { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) },
+        { KbToPercent( 100, maxTrafficKB), D2D1::ColorF(0XFF8040) },
+        { KbToPercent(  10, maxTrafficKB), D2D1::ColorF(0xC0C040) },
+        {                             0.0, D2D1::ColorF(0xC0C0C0) }
+    };
+    MeterGuide netGuides[] = {
+        { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" },
+        { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" },
+        { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M" },
+        { KbToPercent(   1000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M" },
+        { KbToPercent(    100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" },
+        { KbToPercent(     10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K" },
+        {                                0.0, D2D1::ColorF(0xC0C0C0), L"" },
+    };
+
+    // Up(KB単位)
+    {
+        float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficKB);
+        percent = percent < 0.0f ? 0.0f : percent;
+
+        MeterInfo& mi = netMeterOut;
+        mi.percent = percent;
+        mi.label.Format(L"▲ %.1f KB/s", outb);
+        mi.colors = netColors;
+        mi.guides = netGuides;
+    }
+
+    // Down(KB単位)
+    {
+        float percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficKB);
+        percent = percent < 0.0f ? 0.0f : percent;
+
+        MeterInfo& mi = netMeterIn;
+        mi.percent = percent;
+        mi.label.Format(L"▼ %.1f KB/s", inb);
+        mi.colors = netColors;
+        mi.guides = netGuides;
     }
 }
 

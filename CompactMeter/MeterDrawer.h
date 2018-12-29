@@ -98,6 +98,11 @@ private:
 
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
+
+    void MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn);
+    void MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, std::vector<MeterInfo> &coreMeters, MeterInfo &memoryInfo);
+    void MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &driveMeters);
+
     void AppendFormatOfKb(long kb, MeterInfo & mi);
     void DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo& mi);
     void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
