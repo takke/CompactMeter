@@ -17,6 +17,7 @@
 HINSTANCE   g_hInstance = NULL;
 WCHAR       g_szAppTitle[MAX_LOADSTRING];           // タイトル バーのテキスト
 WCHAR       g_szWindowClass[MAX_LOADSTRING];        // メイン ウィンドウ クラス名
+HWND        g_hWnd = NULL;
 
 // 高DPI対応
 int         g_dpix = 96;
@@ -85,6 +86,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         return FALSE;
     }
+
+    g_hWnd = hWnd;
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
@@ -329,6 +332,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_dpiy = HIWORD(wParam);
         g_dpiScale = g_dpix / 96.0f;
         g_meterDrawer.SetDpi((float)g_dpix, (float)g_dpiy);
+        return 0;
+
+    case WM_CONFIG_DLG_UPDATED:
+        Logger::d(L"WM_CONFIG_DLG_UPDATED");
+        g_pWorker->criticalSection.Lock();
+        g_meterDrawer.InitMeterGuide();
+        g_pWorker->criticalSection.Unlock();
         return 0;
 
     default:

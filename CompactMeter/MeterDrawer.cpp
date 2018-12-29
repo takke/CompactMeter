@@ -68,7 +68,7 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 
 void MeterDrawer::InitMeterGuide() {
 
-    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax;
+    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
 
     int i = 0;
     m_netColors[i++] = { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) };
@@ -549,7 +549,7 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
 
 void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn)
 {
-    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax;
+    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
 
     const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
     const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
@@ -561,7 +561,6 @@ void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut
     float outb = (t.out - t0.out) * 1000.0f / duration;
 
     // KB単位
-    maxTrafficKB /= 1000;
     inb /= 1000;
     outb /= 1000;
 

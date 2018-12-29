@@ -7,8 +7,7 @@
 
 extern HWND g_hConfigDlgWnd;
 extern IniConfig* g_pIniConfig;
-extern MeterDrawer g_meterDrawer;
-extern CWorker*    g_pWorker;
+extern HWND g_hWnd;
 
 struct TRAFFIC_MAX_COMBO_DATA {
     LPCWSTR label;
@@ -78,11 +77,8 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
                 g_pIniConfig->Save();
 
-                // UIに反映する
-                g_pWorker->criticalSection.Lock();
-                g_meterDrawer.InitMeterGuide();
-                g_pWorker->criticalSection.Unlock();
-
+                // UIに反映するために変更通知
+                ::PostMessage(g_hWnd, WM_CONFIG_DLG_UPDATED, 0, 0);
             }
             return (INT_PTR)TRUE;
 
