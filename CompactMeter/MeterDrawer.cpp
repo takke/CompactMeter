@@ -66,6 +66,26 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 
 }
 
+void MeterDrawer::InitMeterGuide() {
+
+    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax;
+
+    int i = 0;
+    m_netColors[i++] = { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) };
+    m_netColors[i++] = { KbToPercent( 100, maxTrafficKB), D2D1::ColorF(0XFF8040) };
+    m_netColors[i++] = { KbToPercent(  10, maxTrafficKB), D2D1::ColorF(0xC0C040) };
+    m_netColors[i++] = {                             0.0, D2D1::ColorF(0xC0C0C0) };
+
+    i = 0;
+    m_netGuides[i++] = { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" };
+    m_netGuides[i++] = { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" };
+    m_netGuides[i++] = { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M" };
+    m_netGuides[i++] = { KbToPercent(   1000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M" };
+    m_netGuides[i++] = { KbToPercent(    100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" };
+    m_netGuides[i++] = { KbToPercent(     10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K" };
+    m_netGuides[i++] = {                                0.0, D2D1::ColorF(0xC0C0C0), L"" };
+}
+
 HRESULT MeterDrawer::CreateDeviceIndependentResources()
 {
     HRESULT hr;
@@ -545,23 +565,6 @@ void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut
     inb /= 1000;
     outb /= 1000;
 
-    // TODO メンバーにすること
-    static MeterColor netColors[] = {
-        { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) },
-        { KbToPercent( 100, maxTrafficKB), D2D1::ColorF(0XFF8040) },
-        { KbToPercent(  10, maxTrafficKB), D2D1::ColorF(0xC0C040) },
-        {                             0.0, D2D1::ColorF(0xC0C0C0) }
-    };
-    static MeterGuide netGuides[] = {
-        { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" },
-        { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" },
-        { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M" },
-        { KbToPercent(   1000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M" },
-        { KbToPercent(    100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" },
-        { KbToPercent(     10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K" },
-        {                                0.0, D2D1::ColorF(0xC0C0C0), L"" },
-    };
-
     // Up(KB単位)
     {
         float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficKB);
@@ -570,8 +573,8 @@ void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut
         MeterInfo& mi = netMeterOut;
         mi.percent = percent;
         mi.label.Format(L"▲ %.1f KB/s", outb);
-        mi.colors = netColors;
-        mi.guides = netGuides;
+        mi.colors = m_netColors;
+        mi.guides = m_netGuides;
     }
 
     // Down(KB単位)
@@ -582,8 +585,8 @@ void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut
         MeterInfo& mi = netMeterIn;
         mi.percent = percent;
         mi.label.Format(L"▼ %.1f KB/s", inb);
-        mi.colors = netColors;
-        mi.guides = netGuides;
+        mi.colors = m_netColors;
+        mi.guides = m_netGuides;
     }
 }
 

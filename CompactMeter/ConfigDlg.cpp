@@ -3,9 +3,12 @@
 #include "Logger.h"
 #include "resource.h"
 #include "IniConfig.h"
+#include "MeterDrawer.h"
 
 extern HWND g_hConfigDlgWnd;
 extern IniConfig* g_pIniConfig;
+extern MeterDrawer g_meterDrawer;
+extern CWorker*    g_pWorker;
 
 struct TRAFFIC_MAX_COMBO_DATA {
     LPCWSTR label;
@@ -74,6 +77,11 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 Logger::d(L"selchange %d -> %d", iSelected, g_pIniConfig->mTrafficMax);
 
                 g_pIniConfig->Save();
+
+                // UIに反映する
+                g_pWorker->criticalSection.Lock();
+                g_meterDrawer.InitMeterGuide();
+                g_pWorker->criticalSection.Unlock();
 
             }
             return (INT_PTR)TRUE;

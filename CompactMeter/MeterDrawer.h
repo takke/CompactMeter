@@ -8,11 +8,18 @@
 struct MeterColor {
     float percent;
     D2D1::ColorF color;
+
+    MeterColor() : percent(0.0f), color(0x000000) {}
+    MeterColor(float percent_, D2D1::ColorF color_) : percent(percent_), color(color_) {}
 };
 struct MeterGuide {
     float percent;
     D2D1::ColorF color;
     LPCWSTR text;
+    
+    MeterGuide() : percent(0.0f), color(0x000000), text(L"") {}
+    MeterGuide(float percent_, D2D1::ColorF color_, LPCWSTR text_)
+        : percent(percent_), color(color_), text(text_) {}
 };
 struct MeterInfo {
     CString label;
@@ -54,6 +61,9 @@ private:
     // DirectWrite(DeviceIndependent)
     IDWriteFactory*        m_pDWFactory;
 
+    MeterColor m_netColors[10];
+    MeterGuide m_netGuides[10];
+
 public:
     MeterDrawer()
         : m_pRenderTarget(NULL)
@@ -78,6 +88,9 @@ public:
     void Shutdown();
 
     void DrawToDC(HDC hdc, HWND hWnd, CWorker* pWorker);
+
+    // IniConfig の変更後に呼び出すこと
+    void InitMeterGuide();
 
 private:
     HRESULT CreateDeviceIndependentResources();

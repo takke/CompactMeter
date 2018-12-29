@@ -75,6 +75,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     g_pIniConfig = new IniConfig();
     g_pIniConfig->Load();
+    g_meterDrawer.InitMeterGuide();
 
     HWND hWnd = CreateWindowW(g_szWindowClass, g_szAppTitle,
         WS_POPUP,
