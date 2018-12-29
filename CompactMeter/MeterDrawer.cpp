@@ -274,7 +274,9 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             meters.push_back(&cpuMeter);
             break;
         case METER_ID_CORES:
-            meters.push_back(&coreMeters);
+            if (g_pIniConfig->mShowCoreMeters) {
+                meters.push_back(&coreMeters);
+            }
             break;
         case METER_ID_MEMORY:
             meters.push_back(&memoryMeter);
