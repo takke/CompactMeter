@@ -275,10 +275,6 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             break;
         case METER_ID_CORES:
             meters.push_back(&coreMeters);
-            //for (size_t i = 0; i < coreMeters.size(); i++) {
-            //    coreMeters[i].div = 2;
-            //    meters.push_back(&coreMeters[i]);
-            //}
             break;
         case METER_ID_MEMORY:
             meters.push_back(&memoryMeter);
@@ -369,16 +365,15 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 }
 
 /**
- * 指定された描画範囲(x -> width, y -> height) 内に収まるように meters を描画する
+ * 指定された描画範囲(left -> left+width, y -> bottom) 内に収まるように meters を描画する
  *
  * 各メーターが子要素を持つ場合はそれを再帰的に描画する
  * 
  * 描画できた要素数を返す
  */
-int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height)
+int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float left, float &y, float right, float bottom)
 {
-    float x = baseX;
-    float remainWidth = width;
+    float x = left;
 
     int nDrawn = 0;
     for (int i = startIndex; i < (int)meters.size(); i++) {
@@ -388,74 +383,75 @@ int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int start
 
         if (pmi->children.size() >= 1) {
             
-            // 再帰的に実行する
+            // 子要素全てを再帰的に描画する
             for (int iChildren = 0; ; ) {
 
                 float y1 = y;
-                int n = DrawMetersRecursive(pmi->children, iChildren, boxSize, x, y1, boxSize, y + boxSize);
+                int n = DrawMetersRecursive(pmi->children, iChildren, boxSize, x, y1, x + boxSize, y + boxSize);
                 if (n == 0) {
                     return nDrawn;
                 }
                 iChildren += n;
 
-                x += size;
-                remainWidth -= size;
                 nDrawn += n;
 
-                if (iChildren >= pmi->children.size()) {
+                // 次の描画範囲に移動する
+                if (!MoveToNextBox(x, y, size, left, right, bottom)) {
+                    return nDrawn;
+                }
+
+                if (iChildren >= (int)pmi->children.size()) {
                     // 全て描画し終わったので終了
                     break;
                 }
-                else {
-                    // children がまだ残っているので次の描画範囲に移動して継続する
-
-                    // TODO moveToNextBox() にまとめる
-                    // 幅が足りなくなったら次の行へ
-                    if (remainWidth < size - 1) {       // 誤差で足りなくなる場合があるので -1 する
-                        remainWidth = width;
-
-                        y += size;
-                        x = baseX;
-
-                        // この行を描画できなさそうなら終了
-                        if (y + size - 1 >= height) {
-                            return nDrawn;
-                        }
-                    }
-                }
+                // children がまだ残っているので次の描画範囲に移動して継続する
             }
 
-            continue;
         }
+        else {
 
-        //--------------------------------------------------
-        // 描画
-        //--------------------------------------------------
-        D2D1_RECT_F rect = D2D1::RectF(x, y, x + size, y + size);
+            //--------------------------------------------------
+            // 描画
+            //--------------------------------------------------
+            D2D1_RECT_F rect = D2D1::RectF(x, y, x + size, y + size);
 
-        DrawMeter(rect, *pmi);
+            DrawMeter(rect, *pmi);
 
-        x += size;
-        remainWidth -= size;
-        nDrawn++;
+            nDrawn++;
 
-        // 幅が足りなくなったら次の行へ
-        if (remainWidth < size - 1) {       // 誤差で足りなくなる場合があるので -1 する
-            remainWidth = width;
-
-            y += size;
-            x = baseX;
-
-            // この行を描画できなさそうなら終了
-            if (y + size - 1 >= height) {
+            // 次の描画範囲に移動する
+            if (!MoveToNextBox(x, y, size, left, right, bottom)) {
                 return nDrawn;
             }
         }
 
     }
-    y += boxSize;
+
+    if (x > left) {
+        y += boxSize;
+    }
 
     return nDrawn;
+}
+
+boolean MeterDrawer::MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom)
+{
+    // 描画範囲を右に移動する
+    x += size;
+
+    // 幅が足りなくなったら次の行へ
+    if (x + size - 1 > right) {       // 誤差で足りなくなる場合があるので -1 する
+
+        y += size;
+        x = left;
+
+        // この行を描画できなさそうなら終了
+        if (y + size - 1 >= bottom) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, MeterInfo &coreMeters, MeterInfo &memoryMeter)
@@ -502,7 +498,7 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
             mi.div = 2;
 
             // 仮想的に 2 コアなどを模擬するなら下記のような感じで。
-//            if (i >= 2) break;
+//            if (i+1 >= 2) break;
         }
     }
 

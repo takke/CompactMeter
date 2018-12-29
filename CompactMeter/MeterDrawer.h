@@ -124,6 +124,8 @@ private:
 
     int DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height);
 
+    boolean MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom);
+
     void MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn);
     void MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, MeterInfo &coreMeters, MeterInfo &memoryInfo);
     void MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &driveMeters);
