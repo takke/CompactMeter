@@ -71,12 +71,6 @@ void MeterDrawer::InitMeterGuide() {
     DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
 
     int i = 0;
-    m_netColors[i++] = { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) };
-    m_netColors[i++] = { KbToPercent( 100, maxTrafficKB), D2D1::ColorF(0XFF8040) };
-    m_netColors[i++] = { KbToPercent(  10, maxTrafficKB), D2D1::ColorF(0xC0C040) };
-    m_netColors[i++] = {                             0.0, D2D1::ColorF(0xC0C0C0) };
-
-    i = 0;
     m_netGuides[i++] = { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" };
     m_netGuides[i++] = { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" };
     m_netGuides[i++] = { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M" };
@@ -418,18 +412,11 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
 void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, std::vector<MeterInfo> &coreMeters, MeterInfo &memoryMeter)
 {
-    static MeterColor cpuColors[] = {
-        { 90.0, D2D1::ColorF(0xFF4040) },
-        { 80.0, D2D1::ColorF(0xFF8040) },
-        { 70.0, D2D1::ColorF(0xC0C040) },
-        {  0.0, D2D1::ColorF(0xC0C0C0) }
-    };
-
     static MeterGuide cpuGuides[] = {
         { 100.0, D2D1::ColorF(0xFF4040), L"" },
         {  90.0, D2D1::ColorF(0xFF4040), L"" },
-        {  80.0, D2D1::ColorF(0xFF4040), L"" },
-        {  70.0, D2D1::ColorF(0xFF4040), L"" },
+        {  80.0, D2D1::ColorF(0xFF8040), L"" },
+        {  70.0, D2D1::ColorF(0xC0C040), L"" },
         {  60.0, D2D1::ColorF(0xC0C0C0), L"" },
         {  50.0, D2D1::ColorF(0xC0C0C0), L"" },
         {  40.0, D2D1::ColorF(0xC0C0C0), L"" },
@@ -448,7 +435,6 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
 
         mi.percent = cpuUsage.usages[0];
         mi.label.Format(L"CPU (%.0f%%)", mi.percent);
-        mi.colors = cpuColors;
         mi.guides = cpuGuides;
     }
 
@@ -460,7 +446,6 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
             mi.percent = cpuUsage.usages[i + 1];
             //              mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
             mi.label.Format(L"Core%d", i + 1);
-            mi.colors = cpuColors;
             mi.guides = cpuGuides;
         }
     }
@@ -485,7 +470,6 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
         MeterInfo& mi = memoryMeter;
         mi.percent = ullUsing * 100.0f / ms.ullTotalPhys;
         mi.label.Format(L"Memory (%.0f%%)\n%I64d / %I64d MB", mi.percent, ullUsing / 1024 / 1024, ms.ullTotalPhys / 1024 / 1024);
-        mi.colors = cpuColors;
         mi.guides = cpuGuides;
     }
 }
@@ -503,20 +487,14 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
 
     long maxDriveKB = 10 * 1024 * 1024;
     // TODO メンバーにすること
-    static MeterColor driveColors[] = {
-        { KbToPercent(100000, maxDriveKB), D2D1::ColorF(0xFF4040) },
-        { KbToPercent( 10000, maxDriveKB), D2D1::ColorF(0XFF8040) },
-        { KbToPercent(  1000, maxDriveKB), D2D1::ColorF(0xC0C040) },
-        {                             0.0, D2D1::ColorF(0xC0C0C0) }
-    };
     static MeterGuide driveGuides[] = {
         { KbToPercent(10000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G" },
         { KbToPercent( 1000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"1G" },
         { KbToPercent(  100000, maxDriveKB), D2D1::ColorF(0xFF4040), L"100M" },
         { KbToPercent(   10000, maxDriveKB), D2D1::ColorF(0xFF8040), L"10M" },
         { KbToPercent(    1000, maxDriveKB), D2D1::ColorF(0xC0C040), L"1M" },
-        { KbToPercent(     100, maxDriveKB), D2D1::ColorF(0xC0C040), L"100K" },
-        { KbToPercent(      10, maxDriveKB), D2D1::ColorF(0xC0C040), L"10K" },
+        { KbToPercent(     100, maxDriveKB), D2D1::ColorF(0xC0C0C0), L"100K" },
+        { KbToPercent(      10, maxDriveKB), D2D1::ColorF(0xC0C0C0), L"10K" },
         {                               0.0, D2D1::ColorF(0xC0C0C0), L"" },
     };
 
@@ -530,7 +508,6 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
             mi.percent = KbToPercentL(kb, maxDriveKB);
             mi.label.Format(L"%c: Write ", driveUsage.letters[i]);
             AppendFormatOfKb(kb, mi);
-            mi.colors = driveColors;
             mi.guides = driveGuides;
         }
         // Read
@@ -541,7 +518,6 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
             mi.percent = KbToPercentL(kb, maxDriveKB);
             mi.label.Format(L"%c: Read ", driveUsage.letters[i]);
             AppendFormatOfKb(kb, mi);
-            mi.colors = driveColors;
             mi.guides = driveGuides;
         }
     }
@@ -572,7 +548,6 @@ void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut
         MeterInfo& mi = netMeterOut;
         mi.percent = percent;
         mi.label.Format(L"▲ %.1f KB/s", outb);
-        mi.colors = m_netColors;
         mi.guides = m_netGuides;
     }
 
@@ -584,7 +559,6 @@ void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut
         MeterInfo& mi = netMeterIn;
         mi.percent = percent;
         mi.label.Format(L"▼ %.1f KB/s", inb);
-        mi.colors = m_netColors;
         mi.guides = m_netGuides;
     }
 }
@@ -608,7 +582,6 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo&
 {
     float percent = mi.percent;
     const WCHAR* str = mi.label;
-    MeterColor* colors = mi.colors;
     MeterGuide* guideLines = mi.guides;
         
     auto size = rect.right - rect.left;
@@ -622,12 +595,12 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, float fontScale, const MeterInfo&
 
     D2D1::ColorF color(0x000000);
     for (int i = 0; ; i++) {
-        if (percent >= colors[i].percent) {
-            color = colors[i].color;
+        if (percent >= guideLines[i].percent) {
+            color = guideLines[i].color;
             break;
         }
 
-        if (colors[i].percent == 0.0f) {
+        if (guideLines[i].percent == 0.0f) {
             break;
         }
     }

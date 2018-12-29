@@ -5,13 +5,6 @@
 #include "FpsCounter.h"
 #include "StopWatch.h"
 
-struct MeterColor {
-    float percent;
-    D2D1::ColorF color;
-
-    MeterColor() : percent(0.0f), color(0x000000) {}
-    MeterColor(float percent_, D2D1::ColorF color_) : percent(percent_), color(color_) {}
-};
 struct MeterGuide {
     float percent;
     D2D1::ColorF color;
@@ -24,13 +17,11 @@ struct MeterGuide {
 struct MeterInfo {
     CString label;
     float percent;
-    MeterColor* colors;
     MeterGuide* guides;
     int div;            // 分割数(1 or 2 or 4)
     
     MeterInfo()
         :percent(0.0f)
-        ,colors(NULL)
         ,guides(NULL)
         ,div(1)
     {}
@@ -61,7 +52,6 @@ private:
     // DirectWrite(DeviceIndependent)
     IDWriteFactory*        m_pDWFactory;
 
-    MeterColor m_netColors[10];
     MeterGuide m_netGuides[10];
 
 public:
