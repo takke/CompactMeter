@@ -459,7 +459,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             float size = boxSize / pmi->div;
 
             // 幅が足りなくなったら次の行へ
-            if (remainWidth < size) {
+            if (remainWidth < size - 1) {       // 誤差で足りなくなる場合があるので -1 する
                 remainWidth = width;
 
                 // 「前の行で一番大きかった高さ」分だけ増やす
