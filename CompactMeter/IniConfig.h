@@ -2,6 +2,23 @@
 
 #include "Const.h"
 
+enum MeterId {
+    METER_ID_UNKNOWN    =   0,
+    METER_ID_CPU        = 100,
+    METER_ID_CORES      = 101,
+    METER_ID_MEMORY     = 200,
+    METER_ID_NETWORK    = 300,
+    METER_ID_DRIVES     = 400,
+};
+
+struct MeterConfig {
+    MeterId id;
+
+    MeterConfig(MeterId id_) 
+        : id(id_)
+    {}
+};
+
 class IniConfig
 {
 public:
@@ -27,6 +44,8 @@ public:
 
     boolean mAlwaysOnTop = true;
     boolean mDrawBorder = true;
+
+    std::vector<MeterConfig> mMeterConfigs;
 
 private:
     const wchar_t* szAppName = L"CompactMeter";

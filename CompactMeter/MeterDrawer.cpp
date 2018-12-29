@@ -231,14 +231,14 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     int nCore = 0;
 
     MeterInfo cpuMeter;
-    MeterInfo memoryMeter;
     std::vector<MeterInfo> coreMeters;
+    MeterInfo memoryMeter;
     MeterInfo netMeterIn;
     MeterInfo netMeterOut;
     std::vector<MeterInfo> driveMeters;
 
     // CPU+Memory
-    MakeCpuMemoryMeterInfo(nCore, pWorker, cpuMeter, coreMeters);
+    MakeCpuMemoryMeterInfo(nCore, pWorker, cpuMeter, coreMeters, memoryMeter);
 
     // Drive
     MakeDriveMeterInfo(pWorker, driveMeters);
@@ -248,20 +248,36 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
 
 
     //--------------------------------------------------
-    // 描画順序に合わせて詰める
+    // 描画順序設定に合わせて詰める
     //--------------------------------------------------
     std::vector<MeterInfo*> meters;
-    meters.push_back(&cpuMeter);
-    meters.push_back(&memoryMeter);
-    for (size_t i = 0; i < coreMeters.size(); i++) {
-        coreMeters[i].div = 2;
-        meters.push_back(&coreMeters[i]);
-    }
-    meters.push_back(&netMeterOut);
-    meters.push_back(&netMeterIn);
 
-    for (size_t i = 0; i < driveMeters.size(); i++) {
-        meters.push_back(&driveMeters[i]);
+    for (auto mc : g_pIniConfig->mMeterConfigs) {
+        switch (mc.id) {
+        case METER_ID_UNKNOWN:
+            break;
+        case METER_ID_CPU:
+            meters.push_back(&cpuMeter);
+            break;
+        case METER_ID_CORES:
+            for (size_t i = 0; i < coreMeters.size(); i++) {
+                coreMeters[i].div = 2;
+                meters.push_back(&coreMeters[i]);
+            }
+            break;
+        case METER_ID_MEMORY:
+            meters.push_back(&memoryMeter);
+            break;
+        case METER_ID_NETWORK:
+            meters.push_back(&netMeterOut);
+            meters.push_back(&netMeterIn);
+            break;
+        case METER_ID_DRIVES:
+            for (size_t i = 0; i < driveMeters.size(); i++) {
+                meters.push_back(&driveMeters[i]);
+            }
+            break;
+        }
     }
 
 
@@ -466,13 +482,14 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
     size_t nDrive = driveUsage.letters.size();
 
     long maxDriveKB = 10 * 1024 * 1024;
-    MeterColor driveColors[] = {
+    // TODO メンバーにすること
+    static MeterColor driveColors[] = {
         { KbToPercent(100000, maxDriveKB), D2D1::ColorF(0xFF4040) },
         { KbToPercent( 10000, maxDriveKB), D2D1::ColorF(0XFF8040) },
         { KbToPercent(  1000, maxDriveKB), D2D1::ColorF(0xC0C040) },
         {                             0.0, D2D1::ColorF(0xC0C0C0) }
     };
-    MeterGuide driveGuides[] = {
+    static MeterGuide driveGuides[] = {
         { KbToPercent(10000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G" },
         { KbToPercent( 1000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"1G" },
         { KbToPercent(  100000, maxDriveKB), D2D1::ColorF(0xFF4040), L"100M" },
@@ -528,13 +545,14 @@ void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut
     inb /= 1000;
     outb /= 1000;
 
-    MeterColor netColors[] = {
+    // TODO メンバーにすること
+    static MeterColor netColors[] = {
         { KbToPercent(1000, maxTrafficKB), D2D1::ColorF(0xFF4040) },
         { KbToPercent( 100, maxTrafficKB), D2D1::ColorF(0XFF8040) },
         { KbToPercent(  10, maxTrafficKB), D2D1::ColorF(0xC0C040) },
         {                             0.0, D2D1::ColorF(0xC0C0C0) }
     };
-    MeterGuide netGuides[] = {
+    static MeterGuide netGuides[] = {
         { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" },
         { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" },
         { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M" },
