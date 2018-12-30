@@ -11,11 +11,16 @@ enum MeterId {
     METER_ID_DRIVES     = 400,
 };
 
+/**
+ * メーターの設定値
+ */
 struct MeterConfig {
     MeterId id;
+    boolean enable;
+//    int backgroundColor;
 
-    MeterConfig(MeterId id_) 
-        : id(id_)
+    MeterConfig(MeterId id_, boolean enable_=true) 
+        : id(id_), enable(enable_)
     {}
 };
 
@@ -45,6 +50,7 @@ public:
     boolean mAlwaysOnTop = true;
     boolean mDrawBorder = true;
 
+    // 各メーターの設定値(および順序)
     std::vector<MeterConfig> mMeterConfigs;
 
 private:
