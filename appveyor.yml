@@ -8,12 +8,13 @@ platform:
   - x86
 
 before_build:
+# "1.1.0.76" -> "1_1_0_76"
   - set ARTIFACT_VERSION=%APPVEYOR_BUILD_VERSION:.=_%
-
-artifacts:
-#  - path: 'Release\CompactMeter.exe'
-  - path: CompactMeter_$(ARTIFACT_VERSION).zip
 
 after_build:
   - copy Release\CompactMeter.exe .
-  - 7z a CompactMeter_%ARTIFACT_VERSION%.zip CompactMeter.exe README.md
+  - 7z a CompactMeter_v%ARTIFACT_VERSION%.zip CompactMeter.exe README.md
+
+artifacts:
+#  - path: 'Release\CompactMeter.exe'
+  - path: CompactMeter_v$(ARTIFACT_VERSION).zip
