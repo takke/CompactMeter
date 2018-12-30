@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CompactMeter", "CompactMete
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE842FD6-648A-49F2-9BDB-E34A6AC2260F}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
+		CompactMeter\preBuild.bat = CompactMeter\preBuild.bat
 		README.md = README.md
 	EndProjectSection
 EndProject
