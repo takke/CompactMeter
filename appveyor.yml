@@ -9,8 +9,8 @@ platform:
 
 artifacts:
 #  - path: 'Release\CompactMeter.exe'
-  - path: CompactMeter_$(APPVEYOR_BUILD_NUMBER).zip
+  - path: CompactMeter_$(APPVEYOR_BUILD_VERSION).zip
 
 after_build:
   - copy Release\CompactMeter.exe .
-  - 7z a CompactMeter_%APPVEYOR_BUILD_NUMBER%.zip CompactMeter.exe README.md
+  - 7z a CompactMeter_%APPVEYOR_BUILD_VERSION%.zip CompactMeter.exe README.md
