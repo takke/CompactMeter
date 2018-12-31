@@ -35,6 +35,9 @@ void IniConfig::Load()
     mAlwaysOnTop = ReadBooleanEntry(L"AlwaysOnTop", true);
     mDrawBorder = ReadBooleanEntry(L"DrawBorder", true);
 
+    mColumnCount = ReadIntEntry(L"ColumnCount", 2);
+    NormalizeColumnCount();
+
     // TODO JSONからデシリアライズすること
     mMeterConfigs.clear();
     mMeterConfigs.push_back(MeterConfig(METER_ID_CPU));
@@ -74,6 +77,9 @@ void IniConfig::Save()
     WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);
     WriteIntEntry(L"DrawBorder", mDrawBorder ? 1 : 0);
 
+    NormalizeColumnCount();
+    WriteIntEntry(L"ColumnCount", mColumnCount);
+
     // TODO mMeterConfigsをシリアライズして保存すること
 }
 
@@ -91,5 +97,14 @@ void IniConfig::NormalizeFps()
     }
     else if (mFps > FPS_MAX) {
         mFps = FPS_MAX;
+    }
+}
+
+void IniConfig::NormalizeColumnCount() {
+    if (mColumnCount < COLUMN_COUNT_MIN) {
+        mColumnCount = COLUMN_COUNT_MIN;
+    }
+    else if (mColumnCount > COLUMN_COUNT_MAX) {
+        mColumnCount = COLUMN_COUNT_MAX;
     }
 }

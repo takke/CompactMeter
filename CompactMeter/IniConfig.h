@@ -67,6 +67,11 @@ public:
     boolean mAlwaysOnTop = true;
     boolean mDrawBorder = true;
 
+    // メーターの列数
+    int mColumnCount = 2;
+    const int COLUMN_COUNT_MIN = 1;
+    const int COLUMN_COUNT_MAX = 6;
+
     // 各メーターの設定値(および順序)
     std::vector<MeterConfig> mMeterConfigs;
 
@@ -79,6 +84,7 @@ public:
     void Load();
     void Save();
     void NormalizeFps();
+    void NormalizeColumnCount();
 
 private:
     int ReadIntEntry(LPCTSTR key, int defaultValue);

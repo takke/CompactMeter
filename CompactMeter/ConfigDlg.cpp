@@ -49,6 +49,9 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         // FPS
         SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pIniConfig->mFps, FALSE);
 
+        // メーターの列数
+        SetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, g_pIniConfig->mColumnCount, FALSE);
+
         // 最大通信量
         HWND hTraffixMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
         int iSelected = 0;
@@ -76,7 +79,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             lvc.fmt = LVCFMT_LEFT;
 
             LPCWSTR strItem0[] = { L"メーター名", L"カラム2", NULL };
-            int CX[] = { 100, 160 };
+            int CX[] = { 1000, 160 };
 
             for (int i = 0; strItem0[i] != NULL; i++)
             {
@@ -95,7 +98,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             item.mask = LVIF_TEXT;
             for (size_t i = 0; i < g_pIniConfig->mMeterConfigs.size(); i++)
             {
-                auto& mc = g_pIniConfig->mMeterConfigs[i];
+                const auto& mc = g_pIniConfig->mMeterConfigs[i];
 
                 WCHAR szText[256];
                 item.pszText = szText;
@@ -193,7 +196,31 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                     SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pIniConfig->mFps, FALSE);
                     g_pIniConfig->Save();
                 }
+            }
+            break;
 
+        case IDC_METER_COLUMN_COUNT_SPIN:
+            {
+                LPNMUPDOWN lpnmUpdown = (LPNMUPDOWN)lParam;
+                if (lpnmUpdown->hdr.code == UDN_DELTAPOS) {
+
+                    int n = GetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, NULL, FALSE);
+
+                    if (lpnmUpdown->iDelta > 0) {
+                        Logger::d(L"down");
+                        n--;
+                    }
+                    else {
+                        Logger::d(L"up");
+                        n++;
+                    }
+
+                    g_pIniConfig->mColumnCount = n;
+                    g_pIniConfig->NormalizeColumnCount();
+
+                    SetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, g_pIniConfig->mColumnCount, FALSE);
+                    g_pIniConfig->Save();
+                }
             }
             break;
 

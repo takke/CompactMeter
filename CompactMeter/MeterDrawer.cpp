@@ -301,7 +301,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
 
     // 各ウィジェットの標準サイズ(width, height)
-    float boxSize = screenWidth / 2.0f / g_dpiScale;     // box size
+    float boxSize = screenWidth / g_pIniConfig->mColumnCount / g_dpiScale;     // box size
     float y = 0;
 
     const float width = screenWidth / g_dpiScale;
