@@ -26,7 +26,7 @@ public:
 
         QueryPerformanceCounter(&end);
 
-        DWORD elapsedMicroseconds = (DWORD)((end.QuadPart - start.QuadPart) * 1000000 / freq.QuadPart);
+        DWORD elapsedMicroseconds = (DWORD)((end.QuadPart - start.QuadPart) * 1'000'000 / freq.QuadPart);
         durations.push_back(elapsedMicroseconds);
 
         if (durations.size() >= 30) {

@@ -71,13 +71,13 @@ void MeterDrawer::InitMeterGuide() {
     DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
 
     int i = 0;
-    m_netGuides[i++] = { KbToPercent(1000000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" };
-    m_netGuides[i++] = { KbToPercent( 100000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" };
-    m_netGuides[i++] = { KbToPercent(  10000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M" };
-    m_netGuides[i++] = { KbToPercent(   1000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M" };
-    m_netGuides[i++] = { KbToPercent(    100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" };
-    m_netGuides[i++] = { KbToPercent(     10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K" };
-    m_netGuides[i++] = {                                0.0, D2D1::ColorF(0xC0C0C0), L"" };
+    m_netGuides[i++] = { KbToPercent(1'000'000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" };
+    m_netGuides[i++] = { KbToPercent(  100'000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"100M" };
+    m_netGuides[i++] = { KbToPercent(   10'000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"10M" };
+    m_netGuides[i++] = { KbToPercent(    1'000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M" };
+    m_netGuides[i++] = { KbToPercent(      100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" };
+    m_netGuides[i++] = { KbToPercent(       10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K" };
+    m_netGuides[i++] = {                                  0.0, D2D1::ColorF(0xC0C0C0), L"" };
 }
 
 HRESULT MeterDrawer::CreateDeviceIndependentResources()
@@ -542,14 +542,14 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
     long maxDriveKB = 10 * 1024 * 1024;
     // TODO メンバーにすること
     static MeterGuide driveGuides[] = {
-        { KbToPercent(10000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G" },
-        { KbToPercent( 1000000, maxDriveKB), D2D1::ColorF(0xFF4040), L"1G" },
-        { KbToPercent(  100000, maxDriveKB), D2D1::ColorF(0xFF4040), L"100M" },
-        { KbToPercent(   10000, maxDriveKB), D2D1::ColorF(0xFF8040), L"10M" },
-        { KbToPercent(    1000, maxDriveKB), D2D1::ColorF(0xC0C040), L"1M" },
-        { KbToPercent(     100, maxDriveKB), D2D1::ColorF(0xC0C0C0), L"100K" },
-        { KbToPercent(      10, maxDriveKB), D2D1::ColorF(0xC0C0C0), L"10K" },
-        {                               0.0, D2D1::ColorF(0xC0C0C0), L"" },
+        { KbToPercent(10'000'000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G" },
+        { KbToPercent( 1'000'000, maxDriveKB), D2D1::ColorF(0xFF4040), L"1G" },
+        { KbToPercent(   100'000, maxDriveKB), D2D1::ColorF(0xFF4040), L"100M" },
+        { KbToPercent(    10'000, maxDriveKB), D2D1::ColorF(0xFF8040), L"10M" },
+        { KbToPercent(     1'000, maxDriveKB), D2D1::ColorF(0xC0C040), L"1M" },
+        { KbToPercent(       100, maxDriveKB), D2D1::ColorF(0xC0C0C0), L"100K" },
+        { KbToPercent(        10, maxDriveKB), D2D1::ColorF(0xC0C0C0), L"10K" },
+        {                                 0.0, D2D1::ColorF(0xC0C0C0), L"" },
     };
 
     for (size_t i = 0; i < nDrive; i++) {

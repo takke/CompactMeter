@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-const long MB = 1000 * 1000;
-const long GB = 1000 * 1000 * 1000;
+const long MB = 1'000'000;
+const long GB = 1'000'000'000;
 
 constexpr auto MAX_LOADSTRING = 100;
 
