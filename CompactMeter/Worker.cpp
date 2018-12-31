@@ -296,9 +296,9 @@ void CWorker::CollectDriveUsage(int nDrives, std::vector<PDH_HQUERY> &hDriveRead
 
             usage.letters[i] = 'A' + id;
 
-            if (usage.readUsages[i] != 0 || usage.writeUsages[i] != 0) {
-                Logger::d(L" collect drive %c : %ld, %ld", usage.letters[i], usage.readUsages[i], usage.writeUsages[i]);
-            }
+            //if (usage.readUsages[i] != 0 || usage.writeUsages[i] != 0) {
+            //    Logger::d(L" collect drive %c : %ld, %ld", usage.letters[i], usage.readUsages[i], usage.writeUsages[i]);
+            //}
 
             i++;
         }
