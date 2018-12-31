@@ -49,9 +49,6 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         // FPS
         SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pIniConfig->mFps, FALSE);
 
-        // コア別メーター
-        CheckDlgButton(hDlg, IDC_SHOW_CORE_METER_CHECK, g_pIniConfig->mShowCoreMeters ? BST_CHECKED : BST_UNCHECKED);
-
         // 最大通信量
         HWND hTraffixMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
         int iSelected = 0;
@@ -153,12 +150,12 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             }
             return (INT_PTR)TRUE;
 
-        case IDC_SHOW_CORE_METER_CHECK:
-            if (HIWORD(wParam) == BN_CLICKED) {
-                g_pIniConfig->mShowCoreMeters = IsDlgButtonChecked(hDlg, IDC_SHOW_CORE_METER_CHECK) == BST_CHECKED;
-                g_pIniConfig->Save();
-            }
-            return (INT_PTR)TRUE;
+        //case IDC_SHOW_CORE_METER_CHECK:
+        //    if (HIWORD(wParam) == BN_CLICKED) {
+        //        g_pIniConfig->mShowCoreMeters = IsDlgButtonChecked(hDlg, IDC_SHOW_CORE_METER_CHECK) == BST_CHECKED;
+        //        g_pIniConfig->Save();
+        //    }
+        //    return (INT_PTR)TRUE;
 
         case IDC_MOVE_UP_BUTTON:
             Logger::d(L"up");

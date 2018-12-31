@@ -29,8 +29,6 @@ void IniConfig::Load()
     mFps = ReadIntEntry(L"FPS", 30);
     NormalizeFps();
 
-    mShowCoreMeters = ReadBooleanEntry(L"ShowCoreMeters", true);
-
     mTrafficMax = ReadIntEntry(L"TrafficMax", 300 * MB);
 
     mDebugMode = ReadBooleanEntry(L"DebugMode", false);
@@ -69,8 +67,6 @@ void IniConfig::Save()
 
     NormalizeFps();
     WriteIntEntry(L"FPS", mFps);
-
-    WriteIntEntry(L"ShowCoreMeters", mShowCoreMeters ? 1 : 0);
 
     WriteIntEntry(L"TrafficMax", mTrafficMax);
 

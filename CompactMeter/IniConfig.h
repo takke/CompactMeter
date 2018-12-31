@@ -62,8 +62,6 @@ public:
     const int FPS_MIN = 10;
     const int FPS_MAX = 60;
 
-    boolean mShowCoreMeters = true;
-
     long mTrafficMax = 300 * MB;
 
     boolean mAlwaysOnTop = true;

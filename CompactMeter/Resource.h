@@ -19,7 +19,6 @@
 #define IDC_FPS_EDIT                    1002
 #define IDC_FPS_SPIN                    1003
 #define IDC_TRAFFIC_MAX_COMBO           1005
-#define IDC_SHOW_CORE_METER_CHECK       1006
 #define IDC_METER_CONFIG_LIST           1007
 #define IDC_MOVE_UP_BUTTON              1008
 #define IDC_MOVE_DOWN_BUTTON            1009

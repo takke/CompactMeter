@@ -278,9 +278,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             meters.push_back(&cpuMeter);
             break;
         case METER_ID_CORES:
-            if (g_pIniConfig->mShowCoreMeters) {
-                meters.push_back(&coreMeters);
-            }
+            meters.push_back(&coreMeters);
             break;
         case METER_ID_MEMORY:
             meters.push_back(&memoryMeter);
@@ -489,23 +487,21 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
     }
 
     // 各Core
-    if (g_pIniConfig->mShowCoreMeters) {
-        for (int i = 0; i < nCore; i++) {
+    for (int i = 0; i < nCore; i++) {
 
-            // children はスコープ外で自動削除される
-            MeterInfo* pmi = new MeterInfo();
-            coreMeters.children.push_back(pmi);
-            MeterInfo& mi = *pmi;
+        // children はスコープ外で自動削除される
+        MeterInfo* pmi = new MeterInfo();
+        coreMeters.children.push_back(pmi);
+        MeterInfo& mi = *pmi;
 
-            mi.percent = cpuUsage.usages[i + 1];
+        mi.percent = cpuUsage.usages[i + 1];
 //          mi.label.Format(L"Core%d (%.0f%%)", i + 1, percent);
-            mi.label.Format(L"Core%d", i + 1);
-            mi.guides = cpuGuides;
-            mi.div = 2;
+        mi.label.Format(L"Core%d", i + 1);
+        mi.guides = cpuGuides;
+        mi.div = 2;
 
-            // 仮想的に 2 コアなどを模擬するなら下記のような感じで。
-//            if (i+1 >= 2) break;
-        }
+        // 仮想的に 2 コアなどを模擬するなら下記のような感じで。
+//        if (i+1 >= 2) break;
     }
 
     // メモリ使用量
