@@ -22,6 +22,25 @@ struct MeterConfig {
     MeterConfig(MeterId id_, boolean enable_=true) 
         : id(id_), enable(enable_)
     {}
+
+    LPCWSTR getName() const {
+
+        switch (id) {
+        case METER_ID_CPU:
+            return L"CPU";
+        case METER_ID_CORES:
+            return L"Core";
+        case METER_ID_MEMORY:
+            return L"Memory";
+        case METER_ID_NETWORK:
+            return L"Network";
+        case METER_ID_DRIVES:
+            return L"Drives";
+        case METER_ID_UNKNOWN:
+        default:
+            return L"Unknown";
+        }
+    }
 };
 
 class IniConfig

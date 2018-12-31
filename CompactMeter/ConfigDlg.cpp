@@ -22,6 +22,15 @@ TRAFFIC_MAX_COMBO_DATA TRAFFIC_MAX_COMBO_VALUES[] = {
     { NULL, 0}
 };
 
+static boolean initializing = false;
+
+//--------------------------------------------------
+// プロトタイプ宣言(ローカル)
+//--------------------------------------------------
+void MoveMeterPos(const HWND &hDlg, boolean moveToUp);
+void SwapMeterItem(HWND hList, int n, int iTarget1, int iTarget2);
+
+
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
@@ -35,6 +44,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         //--------------------------------------------------
         // 初期値設定
         //--------------------------------------------------
+        initializing = true;
 
         // FPS
         SetDlgItemInt(hDlg, IDC_FPS_EDIT, g_pIniConfig->mFps, FALSE);
@@ -53,6 +63,67 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             }
         }
         SendMessage(hTraffixMaxCombo, CB_SETCURSEL, iSelected, 0);
+
+        // メーター設定(リストビュー)
+        {
+            HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
+
+            // 拡張スタイル設定
+            DWORD dwStyle = ListView_GetExtendedListViewStyle(hList);
+            dwStyle |= LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES;
+            ListView_SetExtendedListViewStyle(hList, dwStyle);
+
+            // カラム設定
+            LVCOLUMN lvc;
+            lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+            lvc.fmt = LVCFMT_LEFT;
+
+            LPCWSTR strItem0[] = { L"メーター名", L"カラム2", NULL };
+            int CX[] = { 100, 160 };
+
+            for (int i = 0; strItem0[i] != NULL; i++)
+            {
+                lvc.iSubItem = i;
+                lvc.cx = CX[i];
+
+                WCHAR szText[256];
+                lvc.pszText = szText;
+                wcscpy_s(szText, strItem0[i]);
+
+                ListView_InsertColumn(hList, i, &lvc);
+            }
+
+            // メーター項目追加
+            LVITEM item;
+            item.mask = LVIF_TEXT;
+            for (size_t i = 0; i < g_pIniConfig->mMeterConfigs.size(); i++)
+            {
+                auto& mc = g_pIniConfig->mMeterConfigs[i];
+
+                WCHAR szText[256];
+                item.pszText = szText;
+                wcscpy_s(szText, mc.getName());
+                item.iItem = i;
+                item.iSubItem = 0;
+                ListView_InsertItem(hList, &item);
+
+                //item.pszText = L"";
+                //item.iItem = i;
+                //item.iSubItem = 1;
+                //ListView_SetItem(hList, &item);
+                
+                // チェック状態反映
+                ListView_SetCheckState(hList, i, mc.enable ? TRUE : FALSE);
+
+                // 最初の項目を選択状態にする
+                if (i == 0) {
+                    ListView_SetItemState(hList, i, LVIS_SELECTED, LVIS_SELECTED);
+                }
+            }
+
+        }
+
+        initializing = false;
 
         return (INT_PTR)TRUE;
     }
@@ -88,6 +159,16 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 g_pIniConfig->Save();
             }
             return (INT_PTR)TRUE;
+
+        case IDC_MOVE_UP_BUTTON:
+            Logger::d(L"up");
+            MoveMeterPos(hDlg, true);
+            return (INT_PTR)TRUE;
+
+        case IDC_MOVE_DOWN_BUTTON:
+            Logger::d(L"down");
+            MoveMeterPos(hDlg, false);
+            return (INT_PTR)TRUE;
         }
         break;
 
@@ -119,6 +200,34 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             }
             break;
 
+        case IDC_METER_CONFIG_LIST:
+            {
+                LPNMHDR lpNMHDR = (LPNMHDR)lParam;
+
+                switch (lpNMHDR->code) {
+                case LVN_ITEMCHANGED:
+
+                    if (initializing) break;
+                    Logger::d(L"item changed");
+                    {
+                        HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
+
+                        LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lParam;
+                        Logger::d(L" clicked %d:%d", pnmv->iItem, pnmv->iSubItem);
+
+                        auto& configs = g_pIniConfig->mMeterConfigs;
+                        if (0 <= pnmv->iItem && pnmv->iItem < (int)configs.size() && pnmv->iSubItem == 0) {
+                            // チェック状態が変わったかもしれないので反映する
+                            configs[pnmv->iItem].enable = ListView_GetCheckState(hList, pnmv->iItem) == TRUE;
+                        }
+
+                        g_pIniConfig->Save();
+                    }
+                    break;
+                }
+
+            }
+            return (INT_PTR)TRUE;
         }
         break;
 
@@ -136,3 +245,61 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
     return (INT_PTR)FALSE;
 }
 
+void MoveMeterPos(const HWND &hDlg, boolean moveToUp)
+{
+    HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
+
+    int iSelected = -1;
+    int n = ListView_GetItemCount(hList);
+    for (int i = 0; i < n; i++) {
+        if (ListView_GetItemState(hList, i, LVIS_SELECTED) & LVIS_SELECTED) {
+            iSelected = i;
+            break;
+        }
+    }
+    if (iSelected == -1) {
+        Logger::d(L"no selection");
+        return;
+    }
+
+    if (moveToUp) {
+        // 上に移動
+        SwapMeterItem(hList, n, iSelected - 1, iSelected);
+    }
+    else {
+        // 下に移動
+        SwapMeterItem(hList, n, iSelected, iSelected + 1);
+    }
+}
+
+void SwapMeterItem(HWND hList, int n, int iTarget1, int iTarget2) {
+
+    if (iTarget1 < 0 || iTarget2 < 0 || iTarget1 >= n || iTarget2 >= n) {
+        // 範囲外
+        Logger::d(L"範囲外 %d, %d", iTarget1, iTarget2);
+        return;
+    }
+
+    // UI 変更
+    WCHAR szText1[256], szText2[256];
+    ListView_GetItemText(hList, iTarget1, 0, szText1, 256);
+    ListView_GetItemText(hList, iTarget2, 0, szText2, 256);
+    ListView_SetItemText(hList, iTarget1, 0, szText2);
+    ListView_SetItemText(hList, iTarget2, 0, szText1);
+
+    initializing = true;
+    int mask = LVIS_SELECTED | LVIS_STATEIMAGEMASK;
+    int iState1 = ListView_GetItemState(hList, iTarget1, mask);
+    int iState2 = ListView_GetItemState(hList, iTarget2, mask);
+    ListView_SetItemState(hList, iTarget1, iState2, mask);
+    ListView_SetItemState(hList, iTarget2, iState1, mask);
+    initializing = false;
+
+    // データ変更
+    auto w = g_pIniConfig->mMeterConfigs[iTarget1];
+    g_pIniConfig->mMeterConfigs[iTarget1] = g_pIniConfig->mMeterConfigs[iTarget2];
+    g_pIniConfig->mMeterConfigs[iTarget2] = w;
+
+    // 保存
+    g_pIniConfig->Save();
+}

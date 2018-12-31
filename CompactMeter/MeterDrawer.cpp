@@ -266,7 +266,11 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     //--------------------------------------------------
     std::vector<MeterInfo*> meters;
 
-    for (auto mc : g_pIniConfig->mMeterConfigs) {
+    for (const auto& mc : g_pIniConfig->mMeterConfigs) {
+        if (!mc.enable) {
+            continue;
+        }
+
         switch (mc.id) {
         case METER_ID_UNKNOWN:
             break;
