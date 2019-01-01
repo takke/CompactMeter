@@ -22,6 +22,8 @@ struct MeterConfig {
     MeterConfig(MeterId id_, boolean enable_=true) 
         : id(id_), enable(enable_)
     {}
+    MeterConfig() : id(METER_ID_UNKNOWN), enable(false) 
+    {}
 
     LPCWSTR getName() const {
 
@@ -40,6 +42,12 @@ struct MeterConfig {
         default:
             return L"Unknown";
         }
+    }
+
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(CEREAL_NVP(id), CEREAL_NVP(enable));
     }
 };
 
@@ -87,8 +95,10 @@ public:
     void NormalizeColumnCount();
 
 private:
+    void WriteStringEntry(LPCWSTR key, LPCWSTR v);
+    void WriteIntEntry(LPCTSTR key, int value);
+    void ReadStringEntry(const LPCWSTR &key, const LPCWSTR &szDefault, ATL::CString &s);
     int ReadIntEntry(LPCTSTR key, int defaultValue);
     boolean ReadBooleanEntry(LPCTSTR key, boolean defaultValue);
-    void WriteIntEntry(LPCTSTR key, int value);
 };
 

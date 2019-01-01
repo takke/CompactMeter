@@ -7,6 +7,10 @@
 
 #include "targetver.h"
 
+#include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/json.hpp>
+
 #include <atlstr.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -40,6 +44,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <string>
 #include <vector>
 #include <list>
+#include <set>
 
 // プログラムに必要な追加ヘッダーをここで参照してください
 

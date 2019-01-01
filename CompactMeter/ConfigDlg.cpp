@@ -232,12 +232,11 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 case LVN_ITEMCHANGED:
 
                     if (initializing) break;
-                    Logger::d(L"item changed");
                     {
                         HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
 
                         LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lParam;
-                        Logger::d(L" clicked %d:%d", pnmv->iItem, pnmv->iSubItem);
+                        Logger::d(L"item changed %d:%d", pnmv->iItem, pnmv->iSubItem);
 
                         auto& configs = g_pIniConfig->mMeterConfigs;
                         if (0 <= pnmv->iItem && pnmv->iItem < (int)configs.size() && pnmv->iSubItem == 0) {

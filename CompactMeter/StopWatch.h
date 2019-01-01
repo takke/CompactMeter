@@ -9,7 +9,7 @@ private:
     LARGE_INTEGER freq;
 
 public:
-    StopWatch() : freq({})
+    StopWatch() : start({}), end({}), freq({})
     {
     }
 

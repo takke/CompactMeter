@@ -3,13 +3,11 @@
 #include "MyUtil.h"
 #include "Logger.h"
 
-
 IniConfig::IniConfig()
 {
     CString directoryPath = MyUtil::GetModuleDirectoryPath();
     mInifilePath.Format(L"%s\\%s", (LPCWSTR)directoryPath, L"CompactMeter.ini");
 }
-
 
 IniConfig::~IniConfig()
 {
@@ -38,25 +36,48 @@ void IniConfig::Load()
     mColumnCount = ReadIntEntry(L"ColumnCount", 2);
     NormalizeColumnCount();
 
-    // TODO JSONからデシリアライズすること
-    mMeterConfigs.clear();
-    mMeterConfigs.push_back(MeterConfig(METER_ID_CPU));
-    mMeterConfigs.push_back(MeterConfig(METER_ID_MEMORY));
-    mMeterConfigs.push_back(MeterConfig(METER_ID_CORES));
-    mMeterConfigs.push_back(MeterConfig(METER_ID_NETWORK));
-    mMeterConfigs.push_back(MeterConfig(METER_ID_DRIVES));
+    // JSONからデシリアライズする
+    CString s;
+    ReadStringEntry(L"MeterConfigs", L"", s);
+    s.Replace(L"\\n", L"\n");
+    if (!s.IsEmpty()) {
+        mMeterConfigs.clear();
+        Logger::d(L"MeterConfigs -> %s", s);
+        CStringA sa(s);
+        std::stringstream ss;
+        ss << sa;
+        try {
+            cereal::JSONInputArchive i_archive(ss);
+            i_archive(cereal::make_nvp("meters", mMeterConfigs));
+        }
+        catch (cereal::Exception& ex) {
+            Logger::d(L"json load error: %s", CString(ex.what()));
+        }
+    }
+
+    // 足りないものがあれば追加する
+    {
+        std::vector<MeterConfig> defaultMeterConfigs;
+        defaultMeterConfigs.clear();
+        defaultMeterConfigs.push_back(MeterConfig(METER_ID_CPU));
+        defaultMeterConfigs.push_back(MeterConfig(METER_ID_MEMORY));
+        defaultMeterConfigs.push_back(MeterConfig(METER_ID_CORES));
+        defaultMeterConfigs.push_back(MeterConfig(METER_ID_NETWORK));
+        defaultMeterConfigs.push_back(MeterConfig(METER_ID_DRIVES));
+
+        std::set<MeterId> ids;
+        for (auto& v : mMeterConfigs) {
+            ids.insert(v.id);
+        }
+        for (auto& v : defaultMeterConfigs) {
+            if (ids.find(v.id) == ids.end()) {
+                Logger::d(L"見つからないので追加: %d(%s)", v.id, v.getName());
+                mMeterConfigs.push_back(v);
+            }
+        }
+    }
 
     Logger::d(L"ini file loaded");
-}
-
-int IniConfig::ReadIntEntry(LPCTSTR key, int defaultValue)
-{
-    return GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
-}
-
-boolean IniConfig::ReadBooleanEntry(LPCTSTR key, boolean defaultValue)
-{
-    return ReadIntEntry(key, defaultValue ? 1 : 0) != 0;
 }
 
 void IniConfig::Save()
@@ -80,14 +101,16 @@ void IniConfig::Save()
     NormalizeColumnCount();
     WriteIntEntry(L"ColumnCount", mColumnCount);
 
-    // TODO mMeterConfigsをシリアライズして保存すること
-}
-
-void IniConfig::WriteIntEntry(LPCTSTR key, int value)
-{
-    CString v;
-    v.Format(L"%d", value);
-    WritePrivateProfileString(szAppName, key, v, mInifilePath);
+    // mMeterConfigsをシリアライズして保存する
+    std::stringstream ss;
+    {
+        cereal::JSONOutputArchive o_archive(ss);
+        o_archive(cereal::make_nvp("meters", mMeterConfigs));
+    }
+    CString s(ss.str().c_str());
+//    Logger::d(L"json:%s", (LPCWSTR)s);
+    s.Replace(L"\n", L"\\n");
+    WriteStringEntry(L"MeterConfigs", s);
 }
 
 void IniConfig::NormalizeFps()
@@ -108,3 +131,38 @@ void IniConfig::NormalizeColumnCount() {
         mColumnCount = COLUMN_COUNT_MAX;
     }
 }
+
+void IniConfig::WriteStringEntry(LPCWSTR key, LPCWSTR v)
+{
+    WritePrivateProfileString(szAppName, key, v, mInifilePath);
+}
+
+void IniConfig::WriteIntEntry(LPCTSTR key, int value)
+{
+    CString v;
+    v.Format(L"%d", value);
+    WritePrivateProfileString(szAppName, key, v, mInifilePath);
+}
+
+void IniConfig::ReadStringEntry(const LPCWSTR &key, const LPCWSTR &szDefault, ATL::CString &s)
+{
+    wchar_t buf[1024];
+    int n = GetPrivateProfileString(szAppName, key, szDefault, buf, 1024, mInifilePath);
+    if (n >= 1) {
+        s = buf;
+    }
+    else {
+        s = szDefault;
+    }
+}
+
+int IniConfig::ReadIntEntry(LPCTSTR key, int defaultValue)
+{
+    return GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
+}
+
+boolean IniConfig::ReadBooleanEntry(LPCTSTR key, boolean defaultValue)
+{
+    return ReadIntEntry(key, defaultValue ? 1 : 0) != 0;
+}
+
