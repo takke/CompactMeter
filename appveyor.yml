@@ -7,14 +7,16 @@ configuration:
 platform:
   - x86
 
-before_build:
-  # "1.1.0.76" -> "1_1_0_76"
-  - set ARTIFACT_VERSION=%APPVEYOR_BUILD_VERSION:.=_%
+install:
   # init submodule
   - cd ext\cereal
   - git submodule update -i
   - git checkout v1.2.2
   - cd ..\..
+
+before_build:
+  # "1.1.0.76" -> "1_1_0_76"
+  - set ARTIFACT_VERSION=%APPVEYOR_BUILD_VERSION:.=_%
 
 build:
   project: CompactMeter.sln
