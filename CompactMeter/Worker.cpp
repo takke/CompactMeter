@@ -370,12 +370,12 @@ void CWorker::Terminate()
 
 int CWorker::GetCpuUsage(CpuUsage* out)
 {
-    int n = cpuUsages.size();
+    int n = (int)cpuUsages.size();
     if (n <= 0) {
         return 0;
     }
 
-    int nCore = cpuUsages.begin()->usages.size();
+    int nCore = (int)cpuUsages.begin()->usages.size();
 
     // 初期化
     out->usages.resize(nCore);
@@ -398,12 +398,12 @@ int CWorker::GetCpuUsage(CpuUsage* out)
 
 void CWorker::GetDriveUsages(DriveUsage * out)
 {
-    int n = driveUsages.size();
+    int n = (int)driveUsages.size();
 
     // 0以外の最新のデータを集めて格納する
     out->letters = driveUsages.back().letters;
 
-    int nDrive = out->letters.size();
+    int nDrive = (int)out->letters.size();
 
     out->readUsages.resize(nDrive);
     out->writeUsages.resize(nDrive);

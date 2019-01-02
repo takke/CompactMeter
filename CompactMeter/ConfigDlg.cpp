@@ -103,7 +103,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 WCHAR szText[256];
                 item.pszText = szText;
                 wcscpy_s(szText, mc.getName());
-                item.iItem = i;
+                item.iItem = (int)i;
                 item.iSubItem = 0;
                 ListView_InsertItem(hList, &item);
 
@@ -140,7 +140,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         case IDC_TRAFFIC_MAX_COMBO:
             if (HIWORD(wParam) == CBN_SELCHANGE) {
                 HWND hTraffixMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
-                int iSelected = SendMessage(hTraffixMaxCombo, CB_GETCURSEL, 0, 0);
+                int iSelected = (int)SendMessage(hTraffixMaxCombo, CB_GETCURSEL, 0, 0);
 
                 g_pIniConfig->mTrafficMax = TRAFFIC_MAX_COMBO_VALUES[iSelected].value;
 

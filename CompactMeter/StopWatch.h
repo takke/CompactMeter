@@ -45,7 +45,7 @@ public:
         for (const auto& v : durations) {
             a += v;
         }
-        a /= durations.size();
+        a /= (DWORD)durations.size();
 
         return a;
     }

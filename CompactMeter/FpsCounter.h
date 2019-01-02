@@ -45,7 +45,7 @@ public:
 
     int GetAverageFps() {
 
-        int frames = ticks.size();
+        int frames = (int)ticks.size();
         int durationMs = GetTickCount() - ticks[start];
 
         return frames * 1000 / durationMs;

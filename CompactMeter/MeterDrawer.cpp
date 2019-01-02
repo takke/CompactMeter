@@ -699,7 +699,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
     IDWriteTextFormat* pTextFormat;
     if (CreateMyTextFormat(11 * scale, &pTextFormat)) {
 
-        m_pRenderTarget->DrawText(str, wcslen(str), pTextFormat,
+        m_pRenderTarget->DrawText(str, (UINT32)wcslen(str), pTextFormat,
             rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
             DWRITE_MEASURING_MODE_NATURAL);
         SafeRelease(&pTextFormat);
@@ -773,7 +773,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
             if (CreateMyTextFormat(8 * scale, &pTextFormat)) {
 
                 IDWriteTextLayout* pTextLayout = NULL;
-                if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, wcslen(text), pTextFormat, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
+                if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, (UINT32)wcslen(text), pTextFormat, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
 
                     pTextLayout->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
                     m_pRenderTarget->DrawTextLayout(D2D1::Point2F(rect1.left, rect1.top), pTextLayout, m_pBrush);
