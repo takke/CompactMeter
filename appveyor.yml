@@ -5,6 +5,8 @@ configuration:
   - Release
 
 platform:
+  # ここで x64 も指定すると個別の zip ファイルに分かれてしまうので
+  # x64 版は after_build で生成する
   - x86
 
 install:
@@ -22,9 +24,12 @@ build:
   project: CompactMeter.sln
 
 after_build:
+  # 64bit build
+  - msbuild "%APPVEYOR_BUILD_FOLDER%\CompactMeter.sln" /p:Platform=x64 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  # packaging
   - copy Release\CompactMeter.exe .
-  - 7z a CompactMeter_v%ARTIFACT_VERSION%.zip CompactMeter.exe README.md
+  - copy x64\Release\CompactMeter_64.exe .
+  - 7z a CompactMeter_v%ARTIFACT_VERSION%.zip CompactMeter.exe CompactMeter_64.exe README.md
 
 artifacts:
-#  - path: 'Release\CompactMeter.exe'
   - path: CompactMeter_v$(ARTIFACT_VERSION).zip
