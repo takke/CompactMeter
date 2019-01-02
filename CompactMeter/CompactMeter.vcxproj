@@ -259,6 +259,7 @@
     <ClInclude Include="Const.h" />
     <ClInclude Include="FpsCounter.h" />
     <ClInclude Include="Logger.h" />
+    <ClInclude Include="MeterConfig.h" />
     <ClInclude Include="MeterDrawer.h" />
     <ClInclude Include="IniConfig.h" />
     <ClInclude Include="MyUtil.h" />
