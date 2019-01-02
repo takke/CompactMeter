@@ -80,7 +80,7 @@ FONT 9, "MS UI Gothic", 0, 0, 0x1
 BEGIN
     ICON            IDI_COMPACTMETER,IDC_STATIC,14,14,20,20
     LTEXT           "CompactMeter, Version XXX",IDC_APPNAME_STATIC,41,15,149,8,SS_NOPREFIX
-    LTEXT           "Copyright (C) 2018-2019 TAKEUCHI Hiroaki",IDC_STATIC,41,30,114,8
+    LTEXT           "Copyright (C) 2018-2019 TAKEUCHI Hiroaki",IDC_STATIC,41,30,149,8
     DEFPUSHBUTTON   "OK",IDOK,140,65,50,14,WS_GROUP
     CONTROL         "GitHub: <a href=""https://github.com/takke/CompactMeter"">github.com/takke/CompactMeter</a>",IDC_SYSLINK_GITHUB_URL,
                     "SysLink",WS_TABSTOP,41,45,149,13
@@ -195,7 +195,7 @@ BEGIN
             VALUE "FileDescription", "CompactMeter"
             VALUE "FileVersion", "1.1.0.0"
             VALUE "InternalName", "CompactMeter.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2018 TAKEUCHI Hiroaki"
+            VALUE "LegalCopyright", "Copyright (C) 2018-2019 TAKEUCHI Hiroaki"
             VALUE "OriginalFilename", "CompactMeter.exe"
             VALUE "ProductName", "CompactMeter"
             VALUE "ProductVersion", "1.1.0.0"
