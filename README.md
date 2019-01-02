@@ -15,7 +15,10 @@ Direct2D 対応なのでCPU負荷を低く抑えています。
 
 ## 対応OS
 
-Windows7, Windows8.1, Windows10
+- Windows7, Windows8.1, Windows10
+
+- Visual C++ 2017 ランタイムが必要
+  - [Visual Studio 2017 用 Microsoft Visual C\+\+ 再頒布可能パッケージ](https://support.microsoft.com/ja-jp/help/2977003/the-latest-supported-visual-c-downloads)
 
 
 ## 操作方法
