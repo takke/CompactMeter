@@ -72,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDC_COMPACTMETER, g_szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-    Logger::Setup();
+    Logger::Setup(L"log.txt");
 
     g_pIniConfig = new IniConfig();
     g_pIniConfig->Load();

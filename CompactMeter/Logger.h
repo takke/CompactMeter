@@ -3,13 +3,13 @@
 class Logger
 {
 public:
-    static void Setup();
+    static void Setup(LPCTSTR filename);
     static void Close();
 
     static void d(LPCWSTR format, ...);
 
 private:
-    static std::wstring filename;
+    static std::wstring fullpath;
     static FILE* fp;
 
 };

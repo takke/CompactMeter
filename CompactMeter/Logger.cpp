@@ -2,16 +2,16 @@
 #include "Logger.h"
 #include "MyUtil.h"
 
-std::wstring Logger::filename = L"";
+std::wstring Logger::fullpath = L"";
 FILE* Logger::fp = NULL;
 
-void Logger::Setup()
+void Logger::Setup(LPCTSTR filename)
 {
     CString directoryPath = MyUtil::GetModuleDirectoryPath();
 
-    filename = directoryPath + L"\\log.txt";
+    fullpath = directoryPath + L"\\" + filename;
 
-    _wfopen_s(&fp, filename.c_str(), L"a, ccs=UTF-8");
+    _wfopen_s(&fp, fullpath.c_str(), L"a, ccs=UTF-8");
 }
 
 void Logger::Close()
