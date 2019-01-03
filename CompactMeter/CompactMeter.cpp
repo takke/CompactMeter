@@ -175,20 +175,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // タスクトレイに常駐
             AddTaskTrayIcon(hWnd);
 
-//            if (g_pInConfig->mDebugMode) {
+//            if (g_pIniConfig->mDebugMode) {
 //                ShowConfigDlg(hWnd);
 //            }
         }
         break;
 
     case WM_NOTIFYTASKTRAYICON:
-//        Logger::d(L"%d, %d", lParam, wParam);
+//        Logger::d(L"0x%08x, 0x%08x", lParam, wParam);
         switch (lParam) {
         case WM_RBUTTONUP:
             {
                 POINT pt;
                 GetCursorPos(&pt);
                 ShowPopupMenu(hWnd, pt);
+            }
+            break;
+
+        case WM_LBUTTONDOWN:
+            {
+                BOOL visible = ::IsWindowVisible(hWnd);
+                Logger::d(L"visible: %s", (visible ? L"yes" : L"no"));
+                ::ShowWindow(hWnd, visible ? SW_HIDE : SW_SHOW);
             }
             break;
         }
