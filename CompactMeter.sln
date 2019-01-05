@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.28010.2041
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CompactMeter", "CompactMeter\CompactMeter.vcxproj", "{CBE2A645-5157-49CA-AB37-D0BC8578173C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0} = {6D21D939-7A3F-4D80-B325-49BC3F4D52F0}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE842FD6-648A-49F2-9BDB-E34A6AC2260F}"
 	ProjectSection(SolutionItems) = preProject
@@ -11,6 +14,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CompactMeter\preBuild.bat = CompactMeter\preBuild.bat
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StartupRegister", "StartupRegister\StartupRegister.vcxproj", "{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,6 +39,18 @@ Global
 		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Release|x64.Build.0 = Release|x64
 		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Release|x86.ActiveCfg = Release|Win32
 		{CBE2A645-5157-49CA-AB37-D0BC8578173C}.Release|x86.Build.0 = Release|Win32
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug_console|x64.ActiveCfg = Debug|x64
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug_console|x64.Build.0 = Debug|x64
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug_console|x86.ActiveCfg = Debug_console|Win32
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug_console|x86.Build.0 = Debug_console|Win32
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug|x64.ActiveCfg = Debug|x64
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug|x64.Build.0 = Debug|x64
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug|x86.ActiveCfg = Debug|Win32
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Debug|x86.Build.0 = Debug|Win32
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Release|x64.ActiveCfg = Release|x64
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Release|x64.Build.0 = Release|x64
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Release|x86.ActiveCfg = Release|Win32
+		{6D21D939-7A3F-4D80-B325-49BC3F4D52F0}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,9 +5,10 @@
 #include "IniConfig.h"
 #include "MeterDrawer.h"
 
-extern HWND g_hConfigDlgWnd;
+extern HWND       g_hConfigDlgWnd;
 extern IniConfig* g_pIniConfig;
-extern HWND g_hWnd;
+extern HWND       g_hWnd;
+extern WCHAR      g_szAppTitle[MAX_LOADSTRING];
 
 struct TRAFFIC_MAX_COMBO_DATA {
     LPCWSTR label;
@@ -29,6 +30,9 @@ static boolean initializing = false;
 //--------------------------------------------------
 void MoveMeterPos(const HWND &hDlg, boolean moveToUp);
 void SwapMeterItem(HWND hList, int n, int iTarget1, int iTarget2);
+void UpdateRegisterButtons(const HWND &hDlg);
+void RegisterStartup(boolean doRegister, HWND hDlg);
+boolean GetStartupRegValue(CString& strRegValue);
 
 
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -123,6 +127,12 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
         }
 
+        //--------------------------------------------------
+        // スタートアップ登録
+        //--------------------------------------------------
+        // 登録、解除ボタンの有効状態を更新する
+        UpdateRegisterButtons(hDlg);
+
         initializing = false;
 
         return (INT_PTR)TRUE;
@@ -168,6 +178,14 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         case IDC_MOVE_DOWN_BUTTON:
             Logger::d(L"down");
             MoveMeterPos(hDlg, false);
+            return (INT_PTR)TRUE;
+
+        case IDC_REGISTER_STARTUP_BUTTON:
+            RegisterStartup(true, hDlg);
+            return (INT_PTR)TRUE;
+
+        case IDC_UNREGISTER_STARTUP_BUTTON:
+            RegisterStartup(false, hDlg);
             return (INT_PTR)TRUE;
         }
         break;
@@ -267,6 +285,127 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
     }
     return (INT_PTR)FALSE;
 }
+
+void UpdateRegisterButtons(const HWND &hDlg)
+{
+    // 盾アイコン
+    HWND hRegisterButton = ::GetDlgItem(hDlg, IDC_REGISTER_STARTUP_BUTTON);
+    HWND hUnregisterButton = ::GetDlgItem(hDlg, IDC_UNREGISTER_STARTUP_BUTTON);
+    ::SendMessage(hRegisterButton, BCM_SETSHIELD, 0, 1);
+    ::SendMessage(hUnregisterButton, BCM_SETSHIELD, 0, 1);
+
+    // 活性状態
+    CString strRegValue;
+    if (!GetStartupRegValue(strRegValue)) {
+        EnableWindow(hRegisterButton, FALSE);
+        EnableWindow(hUnregisterButton, FALSE);
+    }
+    else {
+        if (strRegValue.IsEmpty()) {
+            // 未登録
+            EnableWindow(hRegisterButton, TRUE);
+            EnableWindow(hUnregisterButton, FALSE);
+        }
+        else {
+            // 登録済み
+            EnableWindow(hRegisterButton, FALSE);
+            EnableWindow(hUnregisterButton, TRUE);
+        }
+    }
+}
+
+void RegisterStartup(boolean bRegister, HWND hDlg)
+{
+    Logger::d(L"startup");
+
+    // ファイル名を指定する
+    CString filename;
+    CString registerExePath;
+    {
+        TCHAR modulePath[MAX_PATH];
+        GetModuleFileName(NULL, modulePath, MAX_PATH);
+
+        TCHAR drive[MAX_PATH + 1], dir[MAX_PATH + 1], fname[MAX_PATH + 1], ext[MAX_PATH + 1];
+        _wsplitpath_s(modulePath, drive, dir, fname, ext);
+
+        // ファイル名の生成
+        filename.Format(L"%s%s", fname, ext);
+
+        // 登録用プログラムのパス生成
+        registerExePath.Format(L"%s%s%s", drive, dir, L"CompactMeter_sr.exe");
+    }
+
+    SHELLEXECUTEINFOW sei = { 0 };
+    sei.cbSize = sizeof(SHELLEXECUTEINFO);
+    sei.hwnd = hDlg;
+    sei.nShow = SW_SHOWNORMAL;
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+    sei.lpVerb = NULL;
+    sei.lpFile = (LPCWSTR)registerExePath;
+
+    // 登録/解除指定
+    sei.lpParameters = bRegister ? filename : NULL;
+
+    // プロセス起動
+    if (!ShellExecuteEx(&sei) || (const int)sei.hInstApp <= 32) {
+        Logger::d(L"error ShellExecuteEx (%d)", GetLastError());
+        return;
+    }
+
+    // 終了を待つ
+    WaitForSingleObject(sei.hProcess, INFINITE);
+
+    Logger::d(L"done");
+
+    // ボタン状態の更新
+    UpdateRegisterButtons(hDlg);
+}
+
+boolean GetStartupRegValue(CString& strRegValue)
+{
+    HKEY hKey = NULL;
+
+    LSTATUS rval;
+    rval = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_QUERY_VALUE, &hKey);
+    if (rval != ERROR_SUCCESS) {
+        Logger::d(L"cannot open key");
+        return false;
+    }
+
+    DWORD dwType;
+    TCHAR lpData[256];
+    DWORD dwDataSize;
+
+    dwDataSize = sizeof(lpData) / sizeof(lpData[0]);
+
+    rval = RegQueryValueEx(
+        hKey,
+        TEXT("CompactMeter"),
+        0,
+        &dwType,
+        (LPBYTE)lpData,
+        &dwDataSize);
+    if (rval != ERROR_SUCCESS) {
+
+        Logger::d(L"cannot query key 0x%08x", rval);
+        if (rval == ERROR_FILE_NOT_FOUND) {
+            // キーなし
+            strRegValue = L"";
+        }
+        else {
+            RegCloseKey(hKey);
+            return false;
+        }
+    }
+    else {
+//        Logger::d(L"Query: %s", lpData);
+        strRegValue = lpData;
+    }
+
+    RegCloseKey(hKey);
+    return true;
+}
+
 
 void MoveMeterPos(const HWND &hDlg, boolean moveToUp)
 {

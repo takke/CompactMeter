@@ -24,6 +24,8 @@
 #define IDC_METER_CONFIG_LIST           1007
 #define IDC_MOVE_UP_BUTTON              1008
 #define IDC_MOVE_DOWN_BUTTON            1009
+#define IDC_REGISTER_STARTUP_BUTTON     1010
+#define IDC_UNREGISTER_STARTUP_BUTTON   1011
 #define ID_POPUPMENU_ALWAYSONTOP        32775
 #define ID_POPUPMENU_DEBUGMODE          32776
 #define ID_POPUPMENU_DRAW_BORDER        32778
@@ -37,7 +39,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32782
-#define _APS_NEXT_CONTROL_VALUE         1009
+#define _APS_NEXT_CONTROL_VALUE         1011
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
