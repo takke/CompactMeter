@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -9,7 +9,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     LPCWSTR caption = L"CompactMeter";
 
-    // ‹ó‚Ìê‡‚ÍƒL[íœAw’è‚³‚ê‚Ä‚¢‚ê‚Î‚»‚ê‚ğƒtƒ@ƒCƒ‹–¼‚Æ‚İ‚È‚µ‚Ä“o˜^‚·‚é
+    // ç©ºã®å ´åˆã¯ã‚­ãƒ¼å‰Šé™¤ã€æŒ‡å®šã•ã‚Œã¦ã„ã‚Œã°ãã‚Œã‚’ãƒ•ã‚¡ã‚¤ãƒ«åã¨ã¿ãªã—ã¦ç™»éŒ²ã™ã‚‹
     wprintf(L"cmdline: [%s]\n", lpCmdLine);
 
     HKEY hKey;
@@ -17,21 +17,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     rval = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_SET_VALUE, &hKey);
     if (rval != ERROR_SUCCESS) {
-        MessageBoxW(NULL, L"ƒL[‚ÌƒI[ƒvƒ“‚É¸”s‚µ‚Ü‚µ‚½", caption, MB_OK | MB_ICONERROR);
+        MessageBoxW(NULL, L"ã‚­ãƒ¼ã®ã‚ªãƒ¼ãƒ—ãƒ³ã«å¤±æ•—ã—ã¾ã—ãŸ", caption, MB_OK | MB_ICONERROR);
         return 1;
     }
     wprintf(L"open: [0x%08x]\n", rval);
 
     LPCWSTR keyName = L"CompactMeter";
     if (wcslen(lpCmdLine) == 0) {
-        // “o˜^‰ğœ
+        // ç™»éŒ²è§£é™¤
         rval = RegDeleteValue(hKey, keyName);
         wprintf(L"delete: [0x%08x]\n", rval);
         if (rval != ERROR_SUCCESS) {
-            MessageBoxW(NULL, L"ƒL[‚Ìíœ‚É¸”s‚µ‚Ü‚µ‚½", caption, MB_OK | MB_ICONERROR);
+            MessageBoxW(NULL, L"ã‚­ãƒ¼ã®å‰Šé™¤ã«å¤±æ•—ã—ã¾ã—ãŸ", caption, MB_OK | MB_ICONERROR);
         }
         else {
-            MessageBoxW(NULL, L"ƒXƒ^[ƒgƒAƒbƒv‚ğ‰ğœ‚µ‚Ü‚µ‚½", caption, MB_OK);
+            MessageBoxW(NULL, L"ã‚¹ã‚¿ãƒ¼ãƒˆã‚¢ãƒƒãƒ—ã‚’è§£é™¤ã—ã¾ã—ãŸ", caption, MB_OK);
         }
     }
     else {
@@ -51,10 +51,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         rval = RegSetValueExW(hKey, keyName, 0, REG_SZ, (LPBYTE)fullpath, wcslen(fullpath) * sizeof(TCHAR));
         wprintf(L"set: [0x%08x]\n", rval);
         if (rval != ERROR_SUCCESS) {
-            MessageBoxW(NULL, L"ƒL[‚Ì“o˜^‚É¸”s‚µ‚Ü‚µ‚½", caption, MB_OK | MB_ICONERROR);
+            MessageBoxW(NULL, L"ã‚­ãƒ¼ã®ç™»éŒ²ã«å¤±æ•—ã—ã¾ã—ãŸ", caption, MB_OK | MB_ICONERROR);
         }
         else {
-            MessageBoxW(NULL, L"ƒXƒ^[ƒgƒAƒbƒv‚É“o˜^‚µ‚Ü‚µ‚½", caption, MB_OK);
+            MessageBoxW(NULL, L"ã‚¹ã‚¿ãƒ¼ãƒˆã‚¢ãƒƒãƒ—ã«ç™»éŒ²ã—ã¾ã—ãŸ", caption, MB_OK);
         }
     }
 
