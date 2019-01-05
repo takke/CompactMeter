@@ -344,7 +344,7 @@ void RegisterStartup(boolean bRegister, HWND hDlg)
     sei.lpFile = (LPCWSTR)registerExePath;
 
     // 登録/解除指定
-    sei.lpParameters = bRegister ? filename : NULL;
+    sei.lpParameters = bRegister ? filename : L"/uninstall";
 
     // プロセス起動
     if (!ShellExecuteEx(&sei) || (const int)sei.hInstApp <= 32) {

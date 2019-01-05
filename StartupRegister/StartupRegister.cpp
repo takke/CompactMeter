@@ -7,9 +7,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
 
+    if (wcslen(lpCmdLine) == 0) {
+        return 0;
+    }
+
     LPCWSTR caption = L"CompactMeter";
 
-    // 空の場合はキー削除、指定されていればそれをファイル名とみなして登録する
+    // "/uninstall" の場合はキー削除、指定されていればそれをファイル名とみなして登録する
     wprintf(L"cmdline: [%s]\n", lpCmdLine);
 
     HKEY hKey;
@@ -23,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     wprintf(L"open: [0x%08x]\n", rval);
 
     LPCWSTR keyName = L"CompactMeter";
-    if (wcslen(lpCmdLine) == 0) {
+    if (wcscmp(L"/uninstall", lpCmdLine) == 0) {
         // 登録解除
         rval = RegDeleteValue(hKey, keyName);
         wprintf(L"delete: [0x%08x]\n", rval);
@@ -43,7 +47,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             TCHAR drive[MAX_PATH + 1], dir[MAX_PATH + 1], fname[MAX_PATH + 1], ext[MAX_PATH + 1];
             _wsplitpath_s(modulePath, drive, dir, fname, ext);
 
-            swprintf_s(fullpath, L"%s%s%s", drive, dir, L"CompactMeter.exe");
+            swprintf_s(fullpath, L"%s%s%s", drive, dir, lpCmdLine);
         }
 
         wprintf(L"path: %s\n", fullpath);
