@@ -332,7 +332,7 @@ void RegisterStartup(boolean bRegister, HWND hDlg)
         filename.Format(L"%s%s", fname, ext);
 
         // 登録用プログラムのパス生成
-        registerExePath.Format(L"%s%s%s", drive, dir, L"CompactMeter_sr.exe");
+        registerExePath.Format(L"%s%s%s", drive, dir, L"register.exe");
     }
 
     SHELLEXECUTEINFOW sei = { 0 };

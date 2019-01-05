@@ -28,9 +28,9 @@ after_build:
   - msbuild "%APPVEYOR_BUILD_FOLDER%\CompactMeter.sln" /p:Platform=x64 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
   # packaging
   - copy Release\CompactMeter.exe .
-  - copy Release\CompactMeter_sr.exe .
+  - copy Release\register.exe .
   - copy x64\Release\CompactMeter_64.exe .
-  - 7z a CompactMeter_v%ARTIFACT_VERSION%.zip CompactMeter.exe CompactMeter_64.exe CompactMeter_sr.exe README.md
+  - 7z a CompactMeter_v%ARTIFACT_VERSION%.zip CompactMeter.exe CompactMeter_64.exe register.exe README.md
 
 artifacts:
   - path: CompactMeter_v$(ARTIFACT_VERSION).zip

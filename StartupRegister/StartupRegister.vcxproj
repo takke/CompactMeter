@@ -105,13 +105,13 @@
     <TargetName>CompactMeter_sr</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>CompactMeter_sr</TargetName>
+    <TargetName>register</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_console|x64'">
-    <TargetName>CompactMeter_sr</TargetName>
+    <TargetName>register</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>CompactMeter_sr</TargetName>
+    <TargetName>register</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
