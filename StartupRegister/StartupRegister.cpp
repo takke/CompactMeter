@@ -23,7 +23,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     rval = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_SET_VALUE, &hKey);
     if (rval != ERROR_SUCCESS) {
-        MessageBoxW(NULL, L"キーのオープンに失敗しました", caption, MB_OK | MB_ICONERROR);
         return STARTUP_REGISTER_EXIT_CODE_FAILED_OPEN_KEY;
     }
     wprintf(L"open: [0x%08x]\n", rval);
@@ -35,15 +34,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         rval = RegDeleteValue(hKey, keyName);
         wprintf(L"delete: [0x%08x]\n", rval);
         if (rval != ERROR_SUCCESS) {
-            MessageBoxW(NULL, L"キーの削除に失敗しました", caption, MB_OK | MB_ICONERROR);
             result = STARTUP_REGISTER_EXIT_CODE_FAILED_DELETE;
         }
         else {
-            MessageBoxW(NULL, L"スタートアップを解除しました", caption, MB_OK);
             result = STARTUP_REGISTER_EXIT_CODE_SUCCESS;
         }
     }
     else {
+        // 登録
         TCHAR fullpath[MAX_PATH];
         {
             TCHAR modulePath[MAX_PATH];
@@ -60,11 +58,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         rval = RegSetValueExW(hKey, keyName, 0, REG_SZ, (LPBYTE)fullpath, wcslen(fullpath) * sizeof(TCHAR));
         wprintf(L"set: [0x%08x]\n", rval);
         if (rval != ERROR_SUCCESS) {
-            MessageBoxW(NULL, L"キーの登録に失敗しました", caption, MB_OK | MB_ICONERROR);
             result = STARTUP_REGISTER_EXIT_CODE_FAILED_REGISTER;
         }
         else {
-            MessageBoxW(NULL, L"スタートアップに登録しました", caption, MB_OK);
             result = STARTUP_REGISTER_EXIT_CODE_SUCCESS;
         }
     }

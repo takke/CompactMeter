@@ -362,6 +362,34 @@ void RegisterStartup(boolean bRegister, HWND hDlg)
 
     Logger::d(L"done: %d", dwExitCode);
 
+    LPCWSTR message = NULL;
+    UINT uType = MB_OK;
+    switch (dwExitCode) {
+    case STARTUP_REGISTER_EXIT_CODE_FAILED_OPEN_KEY:
+        message = L"キーのオープンに失敗しました";
+        uType |= MB_ICONERROR;
+        break;
+    case STARTUP_REGISTER_EXIT_CODE_FAILED_DELETE:
+        message = L"キーの削除に失敗しました";
+        uType |= MB_ICONERROR;
+        break;
+    case STARTUP_REGISTER_EXIT_CODE_FAILED_REGISTER:
+        message = L"キーの登録に失敗しました";
+        uType |= MB_ICONERROR;
+        break;
+    case STARTUP_REGISTER_EXIT_CODE_SUCCESS:
+        if (bRegister) {
+            message = L"スタートアップに登録しました";
+        }
+        else {
+            message = L"スタートアップを解除しました";
+        }
+        break;
+    }
+    if (message != NULL) {
+        MessageBoxW(hDlg, message, g_szAppTitle, uType);
+    }
+
     // ボタン状態の更新
     UpdateRegisterButtons(hDlg);
 }
