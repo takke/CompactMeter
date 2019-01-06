@@ -4,6 +4,7 @@
 #include "resource.h"
 #include "IniConfig.h"
 #include "MeterDrawer.h"
+#include "..\StartupRegister\StartupRegisterConst.h"
 
 extern HWND       g_hConfigDlgWnd;
 extern IniConfig* g_pIniConfig;
@@ -355,7 +356,11 @@ void RegisterStartup(boolean bRegister, HWND hDlg)
     // 終了を待つ
     WaitForSingleObject(sei.hProcess, INFINITE);
 
-    Logger::d(L"done");
+    // 終了コード取得
+    DWORD dwExitCode = STARTUP_REGISTER_EXIT_CODE_FAILED_UNKNOWN;
+    GetExitCodeProcess(sei.hProcess, &dwExitCode);
+
+    Logger::d(L"done: %d", dwExitCode);
 
     // ボタン状態の更新
     UpdateRegisterButtons(hDlg);
