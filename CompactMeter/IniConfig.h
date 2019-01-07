@@ -15,7 +15,7 @@ public:
     int mConfigDlgPosX = 0;
     int mConfigDlgPosY = 0;
 
-    boolean mDebugMode = false;
+    bool mDebugMode = false;
 
     // 設定値
     int mFps = 30;
@@ -24,8 +24,8 @@ public:
 
     long mTrafficMax = 300 * MB;
 
-    boolean mAlwaysOnTop = true;
-    boolean mDrawBorder = true;
+    bool mAlwaysOnTop = true;
+    bool mDrawBorder = true;
 
     // メーターの列数
     int mColumnCount = 2;
@@ -51,6 +51,6 @@ private:
     void WriteIntEntry(LPCTSTR key, int value);
     void ReadStringEntry(const LPCWSTR &key, const LPCWSTR &szDefault, ATL::CString &s);
     int ReadIntEntry(LPCTSTR key, int defaultValue);
-    boolean ReadBooleanEntry(LPCTSTR key, boolean defaultValue);
+    bool ReadBoolEntry(LPCTSTR key, bool defaultValue);
 };
 

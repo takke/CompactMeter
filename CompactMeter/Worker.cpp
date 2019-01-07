@@ -4,8 +4,8 @@
 #include "IniConfig.h"
 #include "MeterDrawer.h"
 
-extern boolean g_dragging;
-extern IniConfig* g_pIniConfig;
+extern bool        g_dragging;
+extern IniConfig*  g_pIniConfig;
 extern MeterDrawer g_meterDrawer;
 
 CWorker::CWorker(void)
@@ -128,7 +128,7 @@ DWORD WINAPI CWorker::ExecThread()
     return S_OK;
 }
 
-boolean CWorker::InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProcessors, std::vector<PDH_HQUERY> &hCounter)
+bool CWorker::InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProcessors, std::vector<PDH_HQUERY> &hCounter)
 {
     hQuery.resize(nProcessors + 1);
     hCounter.resize(nProcessors + 1);
@@ -154,7 +154,7 @@ boolean CWorker::InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nPro
     return true;
 }
 
-boolean CWorker::InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<PDH_HQUERY> &hDriveWriteCounter, std::vector<PDH_HQUERY> &hDriveReadQuery, std::vector<PDH_HQUERY> &hDriveReadCounter, int &nDrives)
+bool CWorker::InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<PDH_HQUERY> &hDriveWriteCounter, std::vector<PDH_HQUERY> &hDriveReadQuery, std::vector<PDH_HQUERY> &hDriveReadCounter, int &nDrives)
 {
     hDriveWriteQuery.resize(26);
     hDriveWriteCounter.resize(26);

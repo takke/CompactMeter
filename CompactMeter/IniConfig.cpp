@@ -15,6 +15,8 @@ IniConfig::~IniConfig()
 
 void IniConfig::Load()
 {
+    Logger::d(L"ini file load: start");
+
     // 画面サイズのデフォルト値
     mWindowWidth = ReadIntEntry(L"WindowWidth", 300);
     mWindowHeight = ReadIntEntry(L"WindowHeight", 600);
@@ -29,9 +31,9 @@ void IniConfig::Load()
 
     mTrafficMax = ReadIntEntry(L"TrafficMax", 300 * MB);
 
-    mDebugMode = ReadBooleanEntry(L"DebugMode", false);
-    mAlwaysOnTop = ReadBooleanEntry(L"AlwaysOnTop", true);
-    mDrawBorder = ReadBooleanEntry(L"DrawBorder", true);
+    mDebugMode = ReadBoolEntry(L"DebugMode", false);
+    mAlwaysOnTop = ReadBoolEntry(L"AlwaysOnTop", true);
+    mDrawBorder = ReadBoolEntry(L"DrawBorder", true);
 
     mColumnCount = ReadIntEntry(L"ColumnCount", 2);
     NormalizeColumnCount();
@@ -55,7 +57,7 @@ void IniConfig::Load()
         }
     }
 
-    // 足りないものがあれば追加する
+    // 過不足があれば追加する
     {
         std::vector<MeterConfig> defaultMeterConfigs;
         defaultMeterConfigs.clear();
@@ -63,21 +65,41 @@ void IniConfig::Load()
         defaultMeterConfigs.push_back(MeterConfig(METER_ID_MEMORY));
         defaultMeterConfigs.push_back(MeterConfig(METER_ID_CORES));
         defaultMeterConfigs.push_back(MeterConfig(METER_ID_NETWORK));
+
+        // TODO ドライブはID別にすること
         defaultMeterConfigs.push_back(MeterConfig(METER_ID_DRIVES));
 
-        std::set<MeterId> ids;
+        std::set<MeterId> ids, ids0;
         for (auto& v : mMeterConfigs) {
             ids.insert(v.id);
         }
+        for (auto& v : defaultMeterConfigs) {
+            ids0.insert(v.id);
+        }
+
+        // 足りないものを追加する(新規追加された機能の分)
         for (auto& v : defaultMeterConfigs) {
             if (ids.find(v.id) == ids.end()) {
                 Logger::d(L"見つからないので追加: %d(%s)", v.id, v.getName());
                 mMeterConfigs.push_back(v);
             }
         }
+
+        // 余分なものを削除する
+        for (size_t i = 0; i < mMeterConfigs.size(); ) {
+            auto& v = mMeterConfigs[i];
+            if (ids0.find(v.id) == ids0.end()) {
+                Logger::d(L"余分なものなので削除する: %d(%s)", v.id, v.getName());
+                mMeterConfigs.erase(mMeterConfigs.begin() + i);
+            }
+            else {
+                i++;
+            }
+        }
+
     }
 
-    Logger::d(L"ini file loaded");
+    Logger::d(L"ini file load: done");
 }
 
 void IniConfig::Save()
@@ -161,7 +183,7 @@ int IniConfig::ReadIntEntry(LPCTSTR key, int defaultValue)
     return GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
 }
 
-boolean IniConfig::ReadBooleanEntry(LPCTSTR key, boolean defaultValue)
+bool IniConfig::ReadBoolEntry(LPCTSTR key, bool defaultValue)
 {
     return ReadIntEntry(key, defaultValue ? 1 : 0) != 0;
 }

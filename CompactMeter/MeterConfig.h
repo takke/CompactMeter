@@ -14,10 +14,12 @@ enum MeterId {
  */
 struct MeterConfig {
     MeterId id;
-    boolean enable;
+
+    // 当初は int(boolean) だったので互換性のため BOOL とする
+    BOOL enable;
 //    int backgroundColor;
 
-    MeterConfig(MeterId id_, boolean enable_ = true)
+    MeterConfig(MeterId id_, BOOL enable_ = true)
         : id(id_), enable(enable_)
     {}
     MeterConfig() : id(METER_ID_UNKNOWN), enable(false)

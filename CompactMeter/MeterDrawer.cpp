@@ -438,7 +438,7 @@ int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int start
     return nDrawn;
 }
 
-boolean MeterDrawer::MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom)
+bool MeterDrawer::MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom)
 {
     // 描画範囲を右に移動する
     x += size;
@@ -810,7 +810,7 @@ void MeterDrawer::DrawLineByAngle(D2D1_POINT_2F& center, float angle, float leng
         strokeWidth);
 }
 
-boolean MeterDrawer::CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) {
+bool MeterDrawer::CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) {
 
     HRESULT hr = m_pDWFactory->CreateTextFormat(
         L"メイリオ"

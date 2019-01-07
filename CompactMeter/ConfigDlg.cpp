@@ -24,16 +24,16 @@ TRAFFIC_MAX_COMBO_DATA TRAFFIC_MAX_COMBO_VALUES[] = {
     { NULL, 0}
 };
 
-static boolean initializing = false;
+static bool initializing = false;
 
 //--------------------------------------------------
 // プロトタイプ宣言(ローカル)
 //--------------------------------------------------
-void MoveMeterPos(const HWND &hDlg, boolean moveToUp);
+void MoveMeterPos(const HWND &hDlg, bool moveToUp);
 void SwapMeterItem(HWND hList, int n, int iTarget1, int iTarget2);
 void UpdateRegisterButtons(const HWND &hDlg);
-void RegisterStartup(boolean doRegister, HWND hDlg);
-boolean GetStartupRegValue(CString& strRegValue);
+void RegisterStartup(bool doRegister, HWND hDlg);
+bool GetStartupRegValue(CString& strRegValue);
 
 
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -84,7 +84,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             lvc.fmt = LVCFMT_LEFT;
 
             LPCWSTR strItem0[] = { L"メーター名", L"カラム2", NULL };
-            int CX[] = { 1000, 160 };
+            int CX[] = { 240, 100 };
 
             for (int i = 0; strItem0[i] != NULL; i++)
             {
@@ -315,7 +315,7 @@ void UpdateRegisterButtons(const HWND &hDlg)
     }
 }
 
-void RegisterStartup(boolean bRegister, HWND hDlg)
+void RegisterStartup(bool bRegister, HWND hDlg)
 {
     Logger::d(L"startup");
 
@@ -394,7 +394,7 @@ void RegisterStartup(boolean bRegister, HWND hDlg)
     UpdateRegisterButtons(hDlg);
 }
 
-boolean GetStartupRegValue(CString& strRegValue)
+bool GetStartupRegValue(CString& strRegValue)
 {
     HKEY hKey = NULL;
 
@@ -439,8 +439,7 @@ boolean GetStartupRegValue(CString& strRegValue)
     return true;
 }
 
-
-void MoveMeterPos(const HWND &hDlg, boolean moveToUp)
+void MoveMeterPos(const HWND &hDlg, bool moveToUp)
 {
     HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
 

@@ -45,7 +45,6 @@ struct MeterInfo {
     }
 };
 
-
 class MeterDrawer
 {
 private:
@@ -124,7 +123,7 @@ private:
 
     int DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height);
 
-    boolean MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom);
+    bool MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom);
 
     void MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn);
     void MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, MeterInfo &coreMeters, MeterInfo &memoryInfo);
@@ -133,7 +132,7 @@ private:
     void AppendFormatOfKb(long kb, MeterInfo & mi);
     void DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi);
     void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
-    boolean CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
+    bool CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
 
     inline float KbToPercent(float kb, const DWORD &maxTrafficBytes)
     {

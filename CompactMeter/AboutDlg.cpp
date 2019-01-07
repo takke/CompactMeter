@@ -6,7 +6,7 @@
 
 extern WCHAR g_szAppTitle[];
 
-inline boolean GetModuleFileVersion(WORD version[4])
+inline bool GetModuleFileVersion(WORD version[4])
 {
     TCHAR             fileName[MAX_PATH + 1];
     ::GetModuleFileName(NULL, fileName, sizeof(fileName));

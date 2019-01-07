@@ -35,7 +35,7 @@ MeterDrawer g_meterDrawer;
 IniConfig*  g_pIniConfig = NULL;
 
 // ドラッグ中
-boolean     g_dragging = false;
+bool        g_dragging = false;
 
 // 設定画面
 HWND        g_hConfigDlgWnd = NULL;
