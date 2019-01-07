@@ -29,11 +29,13 @@ static bool initializing = false;
 //--------------------------------------------------
 // プロトタイプ宣言(ローカル)
 //--------------------------------------------------
-void MoveMeterPos(const HWND &hDlg, bool moveToUp);
-void SwapMeterItem(HWND hList, int n, int iTarget1, int iTarget2);
+void DoChooseColor(HWND hDlg);
 void UpdateRegisterButtons(const HWND &hDlg);
 void RegisterStartup(bool doRegister, HWND hDlg);
 bool GetStartupRegValue(CString& strRegValue);
+int GetSelectedMeterConfigListIndex(HWND hList);
+void MoveMeterPos(const HWND &hDlg, bool moveToUp);
+void SwapMeterItem(HWND hList, int iTarget1, int iTarget2);
 
 
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -181,6 +183,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             MoveMeterPos(hDlg, false);
             return (INT_PTR)TRUE;
 
+        case IDC_CHOOSE_COLOR_BUTTON:
+            DoChooseColor(hDlg);
+            return (INT_PTR)TRUE;
+
         case IDC_REGISTER_STARTUP_BUTTON:
             RegisterStartup(true, hDlg);
             return (INT_PTR)TRUE;
@@ -285,6 +291,57 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+void DoChooseColor(HWND hDlg)
+{
+    HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
+
+    int iSelected = GetSelectedMeterConfigListIndex(hList);
+    if (iSelected == -1) {
+        Logger::d(L"no selection");
+        return;
+    }
+
+    if (iSelected >= g_pIniConfig->mMeterConfigs.size()) {
+        Logger::d(L"invalid index %d", iSelected);
+        return;
+    }
+
+    CHOOSECOLOR cc = { 0 };
+    static COLORREF CustColors[16] = {
+        RGB(0x00, 0x00, 0x10), RGB(0x00, 0x10, 0x00), RGB(0x10, 0x00, 0x00),
+        RGB(0x00, 0x00, 0x20), RGB(0x00, 0x20, 0x00), RGB(0x20, 0x00, 0x00),
+        RGB(0x00, 0x10, 0x10), RGB(0x10, 0x10, 0x00), RGB(0x10, 0x00, 0x10),
+        RGB(0x00, 0x20, 0x20), RGB(0x20, 0x20, 0x00), RGB(0x20, 0x00, 0x20),
+        RGB(0x10, 0x20, 0x20), RGB(0x20, 0x20, 0x10), RGB(0x20, 0x10, 0x20),
+    };
+
+    cc.lStructSize = sizeof(CHOOSECOLOR);
+    cc.hwndOwner = hDlg;
+
+    // Direct2D カラー -> RGB に変更
+    COLORREF c = g_pIniConfig->mMeterConfigs[iSelected].backgroundColor;
+    cc.rgbResult = RGB((c & (0xff << 16U)) >> 16U, (c & (0xff << 8U)) >> 8U, c & 0xff);
+    Logger::d(L"color: %08x -> %08x", c, cc.rgbResult);
+
+    cc.lpCustColors = CustColors;
+    cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+    // カラー選択
+    if (!ChooseColor(&cc)) {
+        Logger::d(L"cancel");
+        return;
+    }
+
+    // RGB -> Direct2D カラーに変更
+    c = cc.rgbResult;
+    c = (GetRValue(c) << 16U) | (GetGValue(c) << 8U) | GetBValue(c);
+    g_pIniConfig->mMeterConfigs[iSelected].backgroundColor = c;
+    Logger::d(L"selected color: %08x -> %08x", cc.rgbResult, c);
+
+    // 保存
+    g_pIniConfig->Save();
 }
 
 void UpdateRegisterButtons(const HWND &hDlg)
@@ -439,10 +496,8 @@ bool GetStartupRegValue(CString& strRegValue)
     return true;
 }
 
-void MoveMeterPos(const HWND &hDlg, bool moveToUp)
+int GetSelectedMeterConfigListIndex(HWND hList)
 {
-    HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
-
     int iSelected = -1;
     int n = ListView_GetItemCount(hList);
     for (int i = 0; i < n; i++) {
@@ -451,6 +506,15 @@ void MoveMeterPos(const HWND &hDlg, bool moveToUp)
             break;
         }
     }
+
+    return iSelected;
+}
+
+void MoveMeterPos(const HWND &hDlg, bool moveToUp)
+{
+    HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
+
+    int iSelected = GetSelectedMeterConfigListIndex(hList);
     if (iSelected == -1) {
         Logger::d(L"no selection");
         return;
@@ -458,15 +522,17 @@ void MoveMeterPos(const HWND &hDlg, bool moveToUp)
 
     if (moveToUp) {
         // 上に移動
-        SwapMeterItem(hList, n, iSelected - 1, iSelected);
+        SwapMeterItem(hList, iSelected - 1, iSelected);
     }
     else {
         // 下に移動
-        SwapMeterItem(hList, n, iSelected, iSelected + 1);
+        SwapMeterItem(hList, iSelected, iSelected + 1);
     }
 }
 
-void SwapMeterItem(HWND hList, int n, int iTarget1, int iTarget2) {
+void SwapMeterItem(HWND hList, int iTarget1, int iTarget2) {
+
+    const int n = ListView_GetItemCount(hList);
 
     if (iTarget1 < 0 || iTarget2 < 0 || iTarget1 >= n || iTarget2 >= n) {
         // 範囲外

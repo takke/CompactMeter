@@ -237,6 +237,19 @@ void MeterDrawer::Draw(HWND hWnd, CWorker* pWorker)
     }
 }
 
+void addWithConfig(std::vector<MeterInfo*>& meters, MeterInfo* pMeter, const MeterConfig* pMeterConfig) {
+
+    // config値を引き渡す
+    pMeter->pConfig = pMeterConfig;
+    if (!pMeter->children.empty()) {
+        for (auto& v : pMeter->children) {
+            v->pConfig = pMeterConfig;
+        }
+    }
+
+    meters.push_back(pMeter);
+}
+
 void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight)
 {
     //--------------------------------------------------
@@ -275,17 +288,17 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         case METER_ID_UNKNOWN:
             break;
         case METER_ID_CPU:
-            meters.push_back(&cpuMeter);
+            addWithConfig(meters, &cpuMeter, &mc);
             break;
         case METER_ID_CORES:
-            meters.push_back(&coreMeters);
+            addWithConfig(meters, &coreMeters, &mc);
             break;
         case METER_ID_MEMORY:
-            meters.push_back(&memoryMeter);
+            addWithConfig(meters, &memoryMeter, &mc);
             break;
         case METER_ID_NETWORK:
-            meters.push_back(&netMeterOut);
-            meters.push_back(&netMeterIn);
+            addWithConfig(meters, &netMeterOut, &mc);
+            addWithConfig(meters, &netMeterIn, &mc);
             break;
         default:
             if (METER_ID_DRIVE_A <= mc.id && mc.id <= METER_ID_DRIVE_Z) {
@@ -294,7 +307,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
                 for (auto& d : driveMeters) {
                     if (d.label[0] == letter) {
                         // 該当ドライブを見つけたので追加
-                        meters.push_back(&d);
+                        addWithConfig(meters, &d, &mc);
                     }
                 }
             }
@@ -678,9 +691,21 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
     }
 
     //--------------------------------------------------
-    // 枠線
+    // 背景
     //--------------------------------------------------
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+    if (mi.pConfig != NULL) {
+        m_pBrush->SetColor(D2D1::ColorF(mi.pConfig->backgroundColor));
+        rect.right += 1;
+        rect.bottom += 1;
+        m_pRenderTarget->FillRectangle(rect, m_pBrush);
+        rect.right -= 1;
+        rect.bottom -= 1;
+    }
+
+    //--------------------------------------------------
+    // 枠線
+    //--------------------------------------------------
     if (g_pIniConfig->mDrawBorder) {
 
         m_pBrush->SetColor(D2D1::ColorF(0x404040));

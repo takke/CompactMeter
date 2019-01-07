@@ -14,6 +14,8 @@ enum MeterId {
     METER_ID_DRIVE_Z = 426,
 };
 
+constexpr UINT defaultBackgroundColor = 0x0A0A0A;
+
 /**
  * メーターの設定値
  */
@@ -22,12 +24,13 @@ struct MeterConfig {
 
     // 当初は int(boolean) だったので互換性のため BOOL とする
     BOOL enable;
-//    int backgroundColor;
 
-    MeterConfig(MeterId id_, BOOL enable_ = true)
-        : id(id_), enable(enable_)
+    UINT backgroundColor;
+
+    MeterConfig(MeterId id_, BOOL enable_ = true, UINT backgroundColor_ = defaultBackgroundColor)
+        : id(id_), enable(enable_), backgroundColor(backgroundColor_)
     {}
-    MeterConfig() : id(METER_ID_UNKNOWN), enable(false)
+    MeterConfig() : id(METER_ID_UNKNOWN), enable(false), backgroundColor(defaultBackgroundColor)
     {}
 
     LPCWSTR getName() const {
@@ -82,7 +85,7 @@ struct MeterConfig {
     template<class Archive>
     void serialize(Archive & archive)
     {
-        archive(CEREAL_NVP(id), CEREAL_NVP(enable));
+        archive(CEREAL_NVP(id), CEREAL_NVP(enable), CEREAL_NVP(backgroundColor));
     }
 };
 

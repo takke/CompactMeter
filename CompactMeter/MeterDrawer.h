@@ -4,6 +4,7 @@
 #include "Const.h"
 #include "FpsCounter.h"
 #include "StopWatch.h"
+#include "MeterConfig.h"
 
 /**
  * メーターのガイドラインおよびカラー変更のしきい値
@@ -26,15 +27,18 @@ struct MeterInfo {
 
     std::vector<MeterInfo*> children;   // 子要素を持つ場合は size() >= 1
 
-    CString label;
-    float percent;
+    CString     label;
+    float       percent;
     MeterGuide* guides;
-    int div;            // 分割数(1 or 2 or 4)
+    int         div;                // 分割数(1 or 2 or 4)
+    
+    const MeterConfig* pConfig;
 
     MeterInfo()
         : percent(0.0f)
         , guides(NULL)
         , div(1)
+        , pConfig(NULL)
     {}
 
     ~MeterInfo() {
