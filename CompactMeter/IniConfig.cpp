@@ -66,8 +66,21 @@ void IniConfig::Load()
         defaultMeterConfigs.push_back(MeterConfig(METER_ID_CORES));
         defaultMeterConfigs.push_back(MeterConfig(METER_ID_NETWORK));
 
-        // TODO ドライブはID別にすること
-        defaultMeterConfigs.push_back(MeterConfig(METER_ID_DRIVES));
+        // ドライブはID別にする
+        DWORD drives = ::GetLogicalDrives();
+        for (int i = 0, mask = 1; i < 26; i++, mask <<= 1) {
+            if (drives & mask) {
+                CStringA letter;
+                letter.Format("%c:\\", 'A' + i);
+                UINT driveType = GetDriveTypeA(letter);
+                if (driveType == DRIVE_FIXED) {   // HDD/SSD
+                    // OK
+                    auto m = MeterConfig((MeterId)(METER_ID_DRIVE_A + i));
+                    defaultMeterConfigs.push_back(m);
+                    Logger::d(L"Drive: %d(%s)", m.id, m.getName());
+                }
+            }
+        }
 
         std::set<MeterId> ids, ids0;
         for (auto& v : mMeterConfigs) {
@@ -89,8 +102,15 @@ void IniConfig::Load()
         for (size_t i = 0; i < mMeterConfigs.size(); ) {
             auto& v = mMeterConfigs[i];
             if (ids0.find(v.id) == ids0.end()) {
-                Logger::d(L"余分なものなので削除する: %d(%s)", v.id, v.getName());
-                mMeterConfigs.erase(mMeterConfigs.begin() + i);
+
+                if (METER_ID_DRIVE_A <= v.id && v.id <= METER_ID_DRIVE_Z) {
+                    Logger::d(L"ドライブなので残しておく: %d(%s)", v.id, v.getName());
+                    i++;
+                }
+                else {
+                    Logger::d(L"余分なものなので削除する: %d(%s)", v.id, v.getName());
+                    mMeterConfigs.erase(mMeterConfigs.begin() + i);
+                }
             }
             else {
                 i++;

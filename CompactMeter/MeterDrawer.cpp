@@ -287,9 +287,16 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             meters.push_back(&netMeterOut);
             meters.push_back(&netMeterIn);
             break;
-        case METER_ID_DRIVES:
-            for (size_t i = 0; i < driveMeters.size(); i++) {
-                meters.push_back(&driveMeters[i]);
+        default:
+            if (METER_ID_DRIVE_A <= mc.id && mc.id <= METER_ID_DRIVE_Z) {
+                char letter = 'A' + (mc.id - METER_ID_DRIVE_A);
+                // Drive{letter} を探して追加する
+                for (auto& d : driveMeters) {
+                    if (d.label[0] == letter) {
+                        // 該当ドライブを見つけたので追加
+                        meters.push_back(&d);
+                    }
+                }
             }
             break;
         }
