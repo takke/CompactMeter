@@ -55,6 +55,7 @@ DWORD WINAPI CWorker::ExecThread()
     //--------------------------------------------------
     // ドライブ使用量の取得準備
     //--------------------------------------------------
+    // 要素数26で、[0]=Aドライブ、[25]=Zドライブを表す(存在しないドライブの要素は NULL)
     std::vector<PDH_HQUERY>   hDriveReadQuery;
     std::vector<PDH_HCOUNTER> hDriveReadCounter;
     std::vector<PDH_HQUERY>   hDriveWriteQuery;

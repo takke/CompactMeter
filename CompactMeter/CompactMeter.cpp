@@ -176,9 +176,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             AddTaskTrayIcon(hWnd);
 
             // デバッグモードでは設定画面を初期表示
-            if (g_pIniConfig->mDebugMode) {
-                ShowConfigDlg(hWnd);
-            }
+            //if (g_pIniConfig->mDebugMode) {
+            //    ShowConfigDlg(hWnd);
+            //}
         }
         break;
 
