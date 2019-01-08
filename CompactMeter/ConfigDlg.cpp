@@ -4,6 +4,7 @@
 #include "resource.h"
 #include "IniConfig.h"
 #include "MeterDrawer.h"
+#include "MyUtil.h"
 #include "..\StartupRegister\StartupRegisterConst.h"
 
 extern HWND       g_hConfigDlgWnd;
@@ -33,10 +34,10 @@ void DoChooseColor(HWND hDlg);
 void UpdateRegisterButtons(const HWND &hDlg);
 void RegisterStartup(bool doRegister, HWND hDlg);
 bool GetStartupRegValue(CString& strRegValue);
-int GetSelectedMeterConfigListIndex(HWND hList);
+int  GetSelectedMeterConfigListIndex(HWND hList);
 void MoveMeterPos(const HWND &hDlg, bool moveToUp);
 void SwapMeterItem(HWND hList, int iTarget1, int iTarget2);
-
+void SetMeterConfigListViewBackgroundColor(HWND hList, COLORREF backgroundColor, int index);
 
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -85,8 +86,8 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
             lvc.fmt = LVCFMT_LEFT;
 
-            LPCWSTR strItem0[] = { L"メーター名", L"カラム2", NULL };
-            int CX[] = { 240, 100 };
+            LPCWSTR strItem0[] = { L"メーター名", L"背景色", NULL };
+            int CX[] = { 220, 100 };
 
             for (int i = 0; strItem0[i] != NULL; i++)
             {
@@ -114,10 +115,8 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 item.iSubItem = 0;
                 ListView_InsertItem(hList, &item);
 
-                //item.pszText = L"";
-                //item.iItem = i;
-                //item.iSubItem = 1;
-                //ListView_SetItem(hList, &item);
+                // 背景色
+                SetMeterConfigListViewBackgroundColor(hList, mc.backgroundColor, i);
                 
                 // チェック状態反映
                 ListView_SetCheckState(hList, i, mc.enable ? TRUE : FALSE);
@@ -303,7 +302,7 @@ void DoChooseColor(HWND hDlg)
         return;
     }
 
-    if (iSelected >= g_pIniConfig->mMeterConfigs.size()) {
+    if (iSelected >= (int)g_pIniConfig->mMeterConfigs.size()) {
         Logger::d(L"invalid index %d", iSelected);
         return;
     }
@@ -322,7 +321,7 @@ void DoChooseColor(HWND hDlg)
 
     // Direct2D カラー -> RGB に変更
     COLORREF c = g_pIniConfig->mMeterConfigs[iSelected].backgroundColor;
-    cc.rgbResult = RGB((c & (0xff << 16U)) >> 16U, (c & (0xff << 8U)) >> 8U, c & 0xff);
+    cc.rgbResult = MyUtil::direct2DColorToRGB(c);
     Logger::d(L"color: %08x -> %08x", c, cc.rgbResult);
 
     cc.lpCustColors = CustColors;
@@ -342,6 +341,9 @@ void DoChooseColor(HWND hDlg)
 
     // 保存
     g_pIniConfig->Save();
+
+    // リストに反映
+    SetMeterConfigListViewBackgroundColor(hList, c, iSelected);
 }
 
 void UpdateRegisterButtons(const HWND &hDlg)
@@ -562,4 +564,19 @@ void SwapMeterItem(HWND hList, int iTarget1, int iTarget2) {
 
     // 保存
     g_pIniConfig->Save();
+}
+
+void SetMeterConfigListViewBackgroundColor(HWND hList, COLORREF backgroundColor, int index)
+{
+    LVITEM item;
+    item.mask = LVIF_TEXT;
+    item.iItem = index;
+    item.iSubItem = 1;
+
+    WCHAR szText[256];
+    item.pszText = szText;
+    COLORREF c = MyUtil::direct2DColorToRGB(backgroundColor);
+    swprintf_s(szText, L"#%02X%02X%02X", GetRValue(c), GetGValue(c), GetBValue(c));
+
+    ListView_SetItem(hList, &item);
 }
