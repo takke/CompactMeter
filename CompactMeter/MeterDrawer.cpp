@@ -9,8 +9,8 @@ extern int g_dpiy;
 extern float g_dpiScale;
 extern IniConfig* g_pIniConfig;
 
-void MeterDrawer::Init(HWND hWnd, int width, int height) {
-
+void MeterDrawer::Init(HWND hWnd, int width, int height)
+{
     HRESULT hr = CreateDeviceIndependentResources();
     if (FAILED(hr)) return;
 
@@ -18,8 +18,8 @@ void MeterDrawer::Init(HWND hWnd, int width, int height) {
     CreateDeviceResources(hWnd, width, height);
 }
 
-void MeterDrawer::Resize(HWND hWnd, int width, int height) {
-
+void MeterDrawer::Resize(HWND hWnd, int width, int height)
+{
     m_pRenderTarget->Resize(D2D1::SizeU(width, height));
 }
 
@@ -29,6 +29,8 @@ void MeterDrawer::Shutdown() {
 
 void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 {
+    criticalSection.Lock();
+
     HRESULT hr;
     RECT rc;
 
@@ -63,7 +65,7 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
         DiscardDeviceResources();
     }
 
-
+    criticalSection.Unlock();
 }
 
 void MeterDrawer::InitMeterGuide() {

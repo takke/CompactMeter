@@ -78,6 +78,8 @@ private:
     MeterGuide m_netGuides[10];
 
 public:
+    CComCriticalSection criticalSection;
+
     MeterDrawer()
         : m_pRenderTarget(NULL)
         , m_pBrush(NULL)
@@ -85,6 +87,7 @@ public:
         , m_pPathGeometry(NULL)
         , m_pDWFactory(NULL)
     {
+        criticalSection.Init();
     }
 
     ~MeterDrawer()

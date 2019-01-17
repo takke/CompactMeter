@@ -7,10 +7,11 @@
 #include "MyUtil.h"
 #include "..\StartupRegister\StartupRegisterConst.h"
 
-extern HWND       g_hConfigDlgWnd;
-extern IniConfig* g_pIniConfig;
-extern HWND       g_hWnd;
-extern WCHAR      g_szAppTitle[MAX_LOADSTRING];
+extern HWND        g_hConfigDlgWnd;
+extern IniConfig*  g_pIniConfig;
+extern HWND        g_hWnd;
+extern WCHAR       g_szAppTitle[MAX_LOADSTRING];
+extern MeterDrawer g_meterDrawer;
 
 struct TRAFFIC_MAX_COMBO_DATA {
     LPCWSTR label;
@@ -228,22 +229,40 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 LPNMUPDOWN lpnmUpdown = (LPNMUPDOWN)lParam;
                 if (lpnmUpdown->hdr.code == UDN_DELTAPOS) {
 
-                    int n = GetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, NULL, FALSE);
+                    const int n0 = GetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, NULL, FALSE);
+                    int n = n0;
 
                     if (lpnmUpdown->iDelta > 0) {
-                        Logger::d(L"down");
                         n--;
-                    }
-                    else {
-                        Logger::d(L"up");
+                    } else {
                         n++;
                     }
 
+                    // 描画中にサイズ変更すると画面が乱れるためロックする
+                    g_meterDrawer.criticalSection.Lock();
+
                     g_pIniConfig->mColumnCount = n;
                     g_pIniConfig->NormalizeColumnCount();
+                    n = g_pIniConfig->mColumnCount;
 
-                    SetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, g_pIniConfig->mColumnCount, FALSE);
+                    Logger::d(L"column count : %d -> %d", n0, n);
+
+                    SetDlgItemInt( hDlg, IDC_METER_COLUMN_COUNT_EDIT, g_pIniConfig->mColumnCount, FALSE );
                     g_pIniConfig->Save();
+
+                    // メーターサイズを基準にしてウィンドウサイズを変更する
+                    {
+                        const int box = g_pIniConfig->mWindowWidth / n0;
+                        const int w = __max(box * n, MAIN_WINDOW_MIN_WIDTH);
+                        const int h = __max(g_pIniConfig->mWindowHeight - (n - n0) * box, MAIN_WINDOW_MIN_HEIGHT);
+                        ::SetWindowPos(g_hWnd, NULL, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+
+                        // g_pIniConfig->mWindowWidth 等の更新、Direct2D バッファのリサイズは WM_SIZE 内で行われる
+
+                        Logger::d(L"window size updated");
+                    }
+
+                    g_meterDrawer.criticalSection.Unlock();
                 }
             }
             break;
