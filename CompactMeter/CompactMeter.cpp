@@ -313,7 +313,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             // リサイズ通知
             g_meterDrawer.Resize(hWnd, g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
-
         }
         return 0;
 
@@ -331,8 +330,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_GETMINMAXINFO:
         MINMAXINFO *pmmi;
         pmmi = (MINMAXINFO*)lParam;
-        pmmi->ptMinTrackSize.x = 200;
-        pmmi->ptMinTrackSize.y = 200;
+        pmmi->ptMinTrackSize.x = MAIN_WINDOW_MIN_WIDTH;
+        pmmi->ptMinTrackSize.y = MAIN_WINDOW_MIN_HEIGHT;
         return 0;
 
     case WM_DPICHANGED:

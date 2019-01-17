@@ -20,6 +20,7 @@ void IniConfig::Load()
     // 画面サイズのデフォルト値
     mWindowWidth = ReadIntEntry(L"WindowWidth", 300);
     mWindowHeight = ReadIntEntry(L"WindowHeight", 600);
+    NormalizeWidthHeight();
 
     mPosX = ReadIntEntry(L"PosX", 0);
     mPosY = ReadIntEntry(L"PosY", 0);
@@ -171,6 +172,15 @@ void IniConfig::NormalizeColumnCount() {
     }
     else if (mColumnCount > COLUMN_COUNT_MAX) {
         mColumnCount = COLUMN_COUNT_MAX;
+    }
+}
+
+void IniConfig::NormalizeWidthHeight() {
+    if (mWindowWidth < MAIN_WINDOW_MIN_WIDTH) {
+        mWindowWidth = MAIN_WINDOW_MIN_WIDTH;
+    }
+    if (mWindowHeight < MAIN_WINDOW_MIN_HEIGHT) {
+        mWindowHeight = MAIN_WINDOW_MIN_HEIGHT;
     }
 }
 

@@ -45,6 +45,7 @@ public:
     void Save();
     void NormalizeFps();
     void NormalizeColumnCount();
+    void NormalizeWidthHeight();
 
 private:
     void WriteStringEntry(LPCWSTR key, LPCWSTR v);

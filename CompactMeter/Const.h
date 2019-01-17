@@ -13,3 +13,7 @@ constexpr auto TRAYICON_ID = 0;
 
 // 設定画面の設定値変更通知
 #define WM_CONFIG_DLG_UPDATED   (WM_USER+200)
+
+// メイン画面のサイズ
+const auto MAIN_WINDOW_MIN_WIDTH = 200;
+const auto MAIN_WINDOW_MIN_HEIGHT = 200;
