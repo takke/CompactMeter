@@ -331,6 +331,9 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 
+#
 # local file
+#
 /image/2018-12-19_16h24_46.mp4
 /image/make_gif_by_ffmpeg.txt
+/packaging
