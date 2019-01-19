@@ -1,12 +1,12 @@
-version: 1.2.0.{build}
+version: 1.3.0.{build}
 image: Visual Studio 2017
 
 configuration:
   - Release
 
 platform:
-  # ここで x64 も指定すると個別の zip ファイルに分かれてしまうので
-  # x64 版は after_build で生成する
+  # buildバッチ内で x86 版、x64 版が生成される。
+  # ここで x64 も指定すると個別の zip ファイルに分かれてしまう。
   - x86
 
 install:
