@@ -9,6 +9,7 @@
 #include "MeterDrawer.h"
 #include "IniConfig.h"
 #include "Logger.h"
+#include "MyUtil.h"
 #include "Const.h"
 
 //--------------------------------------------------
@@ -78,7 +79,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     g_pIniConfig->Load();
     g_meterDrawer.InitMeterGuide();
 
-    HWND hWnd = CreateWindowW(g_szWindowClass, g_szAppTitle,
+    CString appname;
+    MyUtil::GetAppNameWithVersion(appname);
+
+    HWND hWnd = CreateWindowW(g_szWindowClass, appname,
         WS_POPUP,
         g_pIniConfig->mPosX, g_pIniConfig->mPosY,
         g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight, nullptr, nullptr, hInstance, nullptr);

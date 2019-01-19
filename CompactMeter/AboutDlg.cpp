@@ -3,34 +3,7 @@
 #include "resource.h"
 #include "Logger.h"
 #include "prebuild.h"
-
-extern WCHAR g_szAppTitle[];
-
-inline bool GetModuleFileVersion(WORD version[4])
-{
-    TCHAR             fileName[MAX_PATH + 1];
-    ::GetModuleFileName(NULL, fileName, sizeof(fileName));
-
-    DWORD size = ::GetFileVersionInfoSize(fileName, NULL);
-
-    std::vector<BYTE> versionBuffer;
-    versionBuffer.resize(size);
-
-    VS_FIXEDFILEINFO* pFileInfo;
-    UINT              queryLen;
-    if (::GetFileVersionInfo(fileName, NULL, size, &versionBuffer[0])) {
-        ::VerQueryValue(&versionBuffer[0], _T("\\"), (void**)&pFileInfo, &queryLen);
-
-        version[0] = HIWORD(pFileInfo->dwFileVersionMS);
-        version[1] = LOWORD(pFileInfo->dwFileVersionMS);
-        version[2] = HIWORD(pFileInfo->dwFileVersionLS);
-        version[3] = LOWORD(pFileInfo->dwFileVersionLS);
-
-        return true;
-    }
-
-    return false;
-}
+#include "MyUtil.h"
 
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -40,19 +13,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_INITDIALOG:
         {
             CString appname;
-            appname.Format(L"%s ", g_szAppTitle);
-
-            WORD version[4];
-            if (GetModuleFileVersion(version)) {
-                // バージョン情報は [3] を使用しない
-                appname.AppendFormat(L"Version %d.%d.%d", version[0], version[1], version[2]);
-
-                // AppVeyor のビルド番号を追加
-#ifdef APPVEYOR_BUILD_NUMBER_INT
-                appname.AppendFormat(L" (Build #%d)", APPVEYOR_BUILD_NUMBER_INT);
-#endif
-            }
-
+            MyUtil::GetAppNameWithVersion(appname);
             SetDlgItemText(hDlg, IDC_APPNAME_STATIC, appname);
         }
         return (INT_PTR)TRUE;
