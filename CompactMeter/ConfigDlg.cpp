@@ -73,6 +73,9 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         }
         SendMessage(hTraffixMaxCombo, CB_SETCURSEL, iSelected, 0);
 
+        // ESCキーでウィンドウを閉じる
+        CheckDlgButton(hDlg, IDC_CLOSE_WINDOW_BY_ESC_CHECK, g_pIniConfig->mCloseByESC ? BST_CHECKED : BST_UNCHECKED);
+
         // メーター設定(リストビュー)
         {
             HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
@@ -166,12 +169,12 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             }
             return (INT_PTR)TRUE;
 
-        //case IDC_SHOW_CORE_METER_CHECK:
-        //    if (HIWORD(wParam) == BN_CLICKED) {
-        //        g_pIniConfig->mShowCoreMeters = IsDlgButtonChecked(hDlg, IDC_SHOW_CORE_METER_CHECK) == BST_CHECKED;
-        //        g_pIniConfig->Save();
-        //    }
-        //    return (INT_PTR)TRUE;
+        case IDC_CLOSE_WINDOW_BY_ESC_CHECK:
+            if (HIWORD(wParam) == BN_CLICKED) {
+                g_pIniConfig->mCloseByESC = IsDlgButtonChecked(hDlg, IDC_CLOSE_WINDOW_BY_ESC_CHECK) == BST_CHECKED;
+                g_pIniConfig->Save();
+            }
+            return (INT_PTR)TRUE;
 
         case IDC_MOVE_UP_BUTTON:
             Logger::d(L"up");

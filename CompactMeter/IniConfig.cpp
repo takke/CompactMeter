@@ -33,6 +33,7 @@ void IniConfig::Load()
     mTrafficMax = ReadIntEntry(L"TrafficMax", 300 * MB);
 
     mDebugMode = ReadBoolEntry(L"DebugMode", false);
+    mCloseByESC = ReadBoolEntry(L"CloseByESC", true);
     mAlwaysOnTop = ReadBoolEntry(L"AlwaysOnTop", true);
     mDrawBorder = ReadBoolEntry(L"DrawBorder", true);
 
@@ -138,6 +139,7 @@ void IniConfig::Save()
     WriteIntEntry(L"TrafficMax", mTrafficMax);
 
     WriteIntEntry(L"DebugMode", mDebugMode ? 1 : 0);
+    WriteIntEntry(L"CloseByESC", mCloseByESC ? 1 : 0);
     WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);
     WriteIntEntry(L"DrawBorder", mDrawBorder ? 1 : 0);
 

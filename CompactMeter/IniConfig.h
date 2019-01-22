@@ -16,6 +16,7 @@ public:
     int mConfigDlgPosY = 0;
 
     bool mDebugMode = false;
+    bool mCloseByESC = false;
 
     // 設定値
     int mFps = 30;

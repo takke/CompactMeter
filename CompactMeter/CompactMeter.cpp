@@ -259,6 +259,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_KEYDOWN:
         switch (wParam) {
         case VK_ESCAPE:
+            if (g_pIniConfig->mCloseByESC) {
+                PostMessage(hWnd, WM_CLOSE, 0, 0);
+                return 0L;
+            }
+            break;
+
         case VK_F12:
             PostMessage(hWnd, WM_CLOSE, 0, 0);
             return 0L;
