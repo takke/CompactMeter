@@ -56,6 +56,7 @@ void                ShowPopupMenu(const HWND &hWnd, POINT &pt);
 void                ToggleBorder();
 void                ToggleDebugMode();
 void                ToggleAlwaysOnTop(const HWND &hWnd);
+void                ClipMovingArea(LPRECT rcDesktop, LPRECT rcWindow);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -147,6 +148,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    static RECT rectDesktop;
+
     switch (message)
     {
     case WM_CREATE:
@@ -320,6 +323,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         return 0;
 
+    // 移動範囲をデスクトップに限定する
+    case WM_ENTERSIZEMOVE:
+        SystemParametersInfo(SPI_GETWORKAREA, 0, &rectDesktop, 0);
+        Logger::d(L"desktop: [%d, %d], [%d, %d]", rectDesktop.left, rectDesktop.top, rectDesktop.right, rectDesktop.bottom);
+        ClipCursor(&rectDesktop);
+        break;
+
+    case WM_EXITSIZEMOVE:
+        ClipCursor(NULL);
+        break;
+
+    case WM_MOVING:
+        ClipMovingArea(&rectDesktop, (LPRECT)lParam);
+        break;
+
     case WM_MOVE:
         {
             // 移動 => INIに位置を保存
@@ -357,6 +375,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+// ウインドウのクリッピング処理
+void ClipMovingArea(LPRECT rcDesktop, LPRECT rcWindow)
+{
+    if (rcWindow->left < rcDesktop->left) {
+        rcWindow->right = (rcDesktop->left + (rcWindow->right - rcWindow->left));
+        rcWindow->left = (rcDesktop->left);
+    }
+    if (rcWindow->right > rcDesktop->right) {
+        rcWindow->left = (rcDesktop->right - (rcWindow->right - rcWindow->left));
+        rcWindow->right = (rcDesktop->right);
+    }
+    if (rcWindow->top < rcDesktop->top) {
+        rcWindow->bottom = (rcDesktop->top + (rcWindow->bottom - rcWindow->top));
+        rcWindow->top = (rcDesktop->top);
+    }
+    if (rcWindow->bottom > rcDesktop->bottom) {
+        rcWindow->top = (rcDesktop->bottom - (rcWindow->bottom - rcWindow->top));
+        rcWindow->bottom = (rcDesktop->bottom);
+    }
 }
 
 void OnPaint(const HWND &hWnd)
