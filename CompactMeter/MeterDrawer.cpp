@@ -329,7 +329,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
     const float width = screenWidth / g_dpiScale;
     const float height = screenHeight / g_dpiScale;
 
-    if (!DrawMetersRecursive(meters, 0, boxSize, 0, y, width, height)) {
+    if (!DrawMetersRecursive(meters, 0, boxSize, 0, y, width, height, 0)) {
         return;
     }
 
@@ -397,7 +397,7 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
  * 
  * 描画できた要素数を返す
  */
-int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float left, float &y, float right, float bottom)
+int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float left, float &y, float right, float bottom, int depth)
 {
     float x = left;
 
@@ -413,7 +413,7 @@ int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int start
             for (int iChildren = 0; ; ) {
 
                 float y1 = y;
-                int n = DrawMetersRecursive(pmi->children, iChildren, boxSize, x, y1, x + boxSize, y + boxSize);
+                int n = DrawMetersRecursive(pmi->children, iChildren, boxSize, x, y1, x + boxSize, y + boxSize, depth+1);
                 if (n == 0) {
                     return nDrawn;
                 }
@@ -447,6 +447,7 @@ int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int start
 
             // 次の描画範囲に移動する
             if (!MoveToNextBox(x, y, size, left, right, bottom)) {
+//                Logger::d(L"depth=%d, index=%d/%d, [%d, %d], [%d, %d]", depth, i, meters.size(), left, y, right, bottom);
                 return nDrawn;
             }
         }

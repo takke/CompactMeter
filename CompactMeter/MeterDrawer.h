@@ -128,7 +128,7 @@ private:
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
 
-    int DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height);
+    int DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height, int depth);
 
     bool MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom);
 
