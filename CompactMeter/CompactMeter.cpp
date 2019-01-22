@@ -245,6 +245,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         OnPaint(hWnd);
         break;
 
+    case WM_ERASEBKGND:
+        // サイズ変更時にちらつかないようにする
+        return 1;
+
     case WM_DESTROY:
         // 終了処理
         g_pWorker->Terminate();
