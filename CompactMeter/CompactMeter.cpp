@@ -47,6 +47,8 @@ HWND        g_hConfigDlgWnd = NULL;
 //--------------------------------------------------
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void                UpdateMyWindowSize(WPARAM wParam, LPARAM lParam);
+void                ClipMovingArea(LPRECT rcDesktop, LPRECT rcWindow);
 void                OnPaint(const HWND &hWnd);
 void                OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam);
 void                ShowConfigDlg(HWND &hWnd);
@@ -56,7 +58,6 @@ void                ShowPopupMenu(const HWND &hWnd, POINT &pt);
 void                ToggleBorder();
 void                ToggleDebugMode();
 void                ToggleAlwaysOnTop(const HWND &hWnd);
-void                ClipMovingArea(LPRECT rcDesktop, LPRECT rcWindow);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -247,7 +248,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_ERASEBKGND:
         // サイズ変更時にちらつかないようにする
-        return 1;
+        return TRUE;
 
     case WM_DESTROY:
         // 終了処理
@@ -307,6 +308,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_MOUSEMOVE:
         OnMouseMove(hWnd, wParam, lParam);
         return 0L;
+
+    case WM_SIZING:
+        UpdateMyWindowSize(wParam, lParam);
+        return TRUE;
 
     case WM_SIZE:
         {
@@ -385,6 +390,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void UpdateMyWindowSize(WPARAM wParam, LPARAM lParam)
+{
+    RECT* rc = (RECT*)lParam;
+    const int width = rc->right - rc->left;
+    const int height = rc->bottom - rc->top;
+
+    Logger::d(L"Updating %d: width=%d, height=%d", wParam, width, height);
+
+    // TODO box size とメーター数、メーターの列数およびコア数から必要な box 数を算出すること
+
 }
 
 // ウインドウのクリッピング処理
