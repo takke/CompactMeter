@@ -7,6 +7,9 @@ class MyUtil
 public:
     static CString GetModuleDirectoryPath();
 
+    static int GetMeterCount();
+    static int CalcMeterWindowHeight(int width);
+
     inline static COLORREF direct2DColorToRGB(COLORREF c) {
         return RGB((c & (0xff << 16U)) >> 16U, (c & (0xff << 8U)) >> 8U, c & 0xff);
     }

@@ -257,7 +257,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                     {
                         const int box = g_pIniConfig->mWindowWidth / n0;
                         const int w = __max(box * n, MAIN_WINDOW_MIN_WIDTH);
-                        const int h = __max(g_pIniConfig->mWindowHeight - (n - n0) * box, MAIN_WINDOW_MIN_HEIGHT);
+                        const int h = MyUtil::CalcMeterWindowHeight(w);
                         ::SetWindowPos(g_hWnd, NULL, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
 
                         // g_pIniConfig->mWindowWidth 等の更新、Direct2D バッファのリサイズは WM_SIZE 内で行われる
@@ -276,9 +276,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
                 switch (lpNMHDR->code) {
                 case LVN_ITEMCHANGED:
-
-                    if (initializing) break;
                     {
+                        if (initializing)
+                            break;
+
                         HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
 
                         LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lParam;
@@ -291,6 +292,9 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                         }
 
                         g_pIniConfig->Save();
+
+                        // メーターウィンドウサイズ更新
+                        ::PostMessage(g_hWnd, WM_UPDATE_METER_WINDOW_SIZE, 0, 0);
                     }
                     break;
                 }

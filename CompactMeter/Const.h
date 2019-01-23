@@ -11,6 +11,9 @@ constexpr auto PI = 3.14159265f;
 #define WM_NOTIFYTASKTRAYICON   (WM_USER+100)
 constexpr auto TRAYICON_ID = 0;
 
+// 画面のサイズ更新要求
+#define WM_UPDATE_METER_WINDOW_SIZE (WM_USER+101)
+
 // 設定画面の設定値変更通知
 #define WM_CONFIG_DLG_UPDATED   (WM_USER+200)
 

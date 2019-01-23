@@ -84,10 +84,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     CString appname;
     MyUtil::GetAppNameWithVersion(appname);
 
+    // 幅から最適な縦サイズを算出する
+    const int width = g_pIniConfig->mWindowWidth;
+    const int newHeight = MyUtil::CalcMeterWindowHeight(width);
+
     HWND hWnd = CreateWindowW(g_szWindowClass, appname,
         WS_POPUP,
         g_pIniConfig->mPosX, g_pIniConfig->mPosY,
-        g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight, nullptr, nullptr, hInstance, nullptr);
+        width, newHeight, nullptr, nullptr, hInstance, nullptr);
     if (!hWnd)
     {
         return FALSE;
@@ -386,6 +390,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_pWorker->criticalSection.Unlock();
         return 0;
 
+    case WM_UPDATE_METER_WINDOW_SIZE:
+        {
+            // 幅から最適な縦サイズを算出する
+            const int w = g_pIniConfig->mWindowWidth;
+            const int h = MyUtil::CalcMeterWindowHeight(w);
+
+            // 描画中にサイズ変更すると画面が乱れるためロックする
+            g_meterDrawer.criticalSection.Lock();
+            ::SetWindowPos(g_hWnd, NULL, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+            g_meterDrawer.criticalSection.Unlock();
+            return 0;
+        }
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -400,8 +417,19 @@ void UpdateMyWindowSize(WPARAM wParam, LPARAM lParam)
 
     Logger::d(L"Updating %d: width=%d, height=%d", wParam, width, height);
 
-    // TODO box size とメーター数、メーターの列数およびコア数から必要な box 数を算出すること
+    // メーター設定から最適な縦サイズを算出する
+    const int newHeight = MyUtil::CalcMeterWindowHeight(width);
 
+    switch (wParam) {
+    case WMSZ_LEFT:         // 左辺
+    case WMSZ_RIGHT:        // 右辺
+        rc->bottom = rc->top + newHeight;
+        break;
+    case WMSZ_TOP:          // 上辺
+    case WMSZ_BOTTOM:       // 下辺
+        // TODO 縦サイズから逆に幅を算出できるといい
+        break;
+    }
 }
 
 // ウインドウのクリッピング処理
@@ -478,22 +506,22 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
 
     // カーソル変更
     switch (cursorEdge) {
-    case WMSZ_TOPLEFT:
-    case WMSZ_BOTTOMRIGHT:
-        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENWSE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
-        break;
-    case WMSZ_TOPRIGHT:
-    case WMSZ_BOTTOMLEFT:
-        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENESW, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
-        break;
+    //case WMSZ_TOPLEFT:
+    //case WMSZ_BOTTOMRIGHT:
+    //    SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENWSE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+    //    break;
+    //case WMSZ_TOPRIGHT:
+    //case WMSZ_BOTTOMLEFT:
+    //    SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENESW, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+    //    break;
     case WMSZ_LEFT:
     case WMSZ_RIGHT:
         SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZEWE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
         break;
-    case WMSZ_TOP:
-    case WMSZ_BOTTOM:
-        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENS, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
-        break;
+    //case WMSZ_TOP:
+    //case WMSZ_BOTTOM:
+    //    SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZENS, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+    //    break;
     }
 
     // ドラッグ中は非クライアント領域を偽装する
@@ -501,22 +529,22 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
         g_dragging = true;
 
         switch (cursorEdge) {
-        case WMSZ_TOPLEFT:
-            // 左上
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPLEFT, MAKELPARAM(pt.x, pt.y));
-            break;
-        case WMSZ_BOTTOMRIGHT:
-            // 右下
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
-            break;
-        case WMSZ_TOPRIGHT:
-            // 右上
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPRIGHT, MAKELPARAM(pt.x, pt.y));
-            break;
-        case WMSZ_BOTTOMLEFT:
-            // 左下
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMLEFT, MAKELPARAM(pt.x, pt.y));
-            break;
+        //case WMSZ_TOPLEFT:
+        //    // 左上
+        //    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPLEFT, MAKELPARAM(pt.x, pt.y));
+        //    break;
+        //case WMSZ_BOTTOMRIGHT:
+        //    // 右下
+        //    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
+        //    break;
+        //case WMSZ_TOPRIGHT:
+        //    // 右上
+        //    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOPRIGHT, MAKELPARAM(pt.x, pt.y));
+        //    break;
+        //case WMSZ_BOTTOMLEFT:
+        //    // 左下
+        //    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMLEFT, MAKELPARAM(pt.x, pt.y));
+        //    break;
         case WMSZ_LEFT:
             // 左辺
             SendMessage(hWnd, WM_NCLBUTTONDOWN, HTLEFT, MAKELPARAM(pt.x, pt.y));
@@ -525,14 +553,14 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
             // 右辺
             SendMessage(hWnd, WM_NCLBUTTONDOWN, HTRIGHT, MAKELPARAM(pt.x, pt.y));
             break;
-        case WMSZ_TOP:
-            // 上辺
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOP, MAKELPARAM(pt.x, pt.y));
-            break;
-        case WMSZ_BOTTOM:
-            // 下辺
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOM, MAKELPARAM(pt.x, pt.y));
-            break;
+        //case WMSZ_TOP:
+        //    // 上辺
+        //    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTTOP, MAKELPARAM(pt.x, pt.y));
+        //    break;
+        //case WMSZ_BOTTOM:
+        //    // 下辺
+        //    SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOM, MAKELPARAM(pt.x, pt.y));
+        //    break;
         default:
             // 外枠以外のドラッグで移動
             if (wParam & MK_SHIFT) {
@@ -627,6 +655,9 @@ void ToggleDebugMode()
 {
     g_pIniConfig->mDebugMode = !g_pIniConfig->mDebugMode;
     g_pIniConfig->Save();
+
+    // メーターウィンドウサイズ更新
+    ::PostMessage(g_hWnd, WM_UPDATE_METER_WINDOW_SIZE, 0, 0);
 }
 
 void ToggleAlwaysOnTop(const HWND &hWnd)
