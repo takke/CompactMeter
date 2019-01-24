@@ -566,7 +566,7 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
             if (wParam & MK_SHIFT) {
                 // Shift+ドラッグでリサイズ
                 Logger::d(L"resize start");
-                SendMessage(hWnd, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, MAKELPARAM(pt.x, pt.y));
+                SendMessage(hWnd, WM_NCLBUTTONDOWN, HTRIGHT, MAKELPARAM(pt.x, pt.y));
                 Logger::d(L"resize end");
             } else {
                 // ドラッグで移動
