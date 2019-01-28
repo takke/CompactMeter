@@ -79,5 +79,5 @@ int MyUtil::CalcMeterWindowHeight(int width)
 
     Logger::d(L" meterCount=%d, vCount=%d, boxSize=%d", meterCount, requireVerticalCount, boxSize);
 
-    return requireVerticalCount * boxSize + 1 + (g_pIniConfig->mDebugMode ? 200 : 0);
+    return requireVerticalCount * boxSize + 2 + (g_pIniConfig->mDebugMode ? 200 : 0);
 }
