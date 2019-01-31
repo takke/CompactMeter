@@ -15,31 +15,31 @@
 //--------------------------------------------------
 // グローバル変数
 //--------------------------------------------------
-HINSTANCE   g_hInstance = NULL;
+HINSTANCE   g_hInstance = nullptr;
 WCHAR       g_szAppTitle[MAX_LOADSTRING];           // タイトル バーのテキスト
 WCHAR       g_szWindowClass[MAX_LOADSTRING];        // メイン ウィンドウ クラス名
-HWND        g_hWnd = NULL;
+HWND        g_hWnd = nullptr;
 
 // 高DPI対応
-int         g_dpix = 96;
-int         g_dpiy = 96;
-float       g_dpiScale = g_dpix / 96.0f;
+int         g_dpiX = 96;
+int         g_dpiY = 96;
+float       g_dpiScale = g_dpiX / 96.0f;
 
 // ワーカースレッド
 DWORD       g_threadId = 0;
-CWorker*    g_pWorker = NULL;
+CWorker*    g_pWorker = nullptr;
 
 // 描画関連
 MeterDrawer g_meterDrawer;
 
 // 設定データ
-IniConfig*  g_pIniConfig = NULL;
+IniConfig*  g_pIniConfig = nullptr;
 
 // ドラッグ中
 bool        g_dragging = false;
 
 // 設定画面
-HWND        g_hConfigDlgWnd = NULL;
+HWND        g_hConfigDlgWnd = nullptr;
 
 
 //--------------------------------------------------
@@ -161,9 +161,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             // DPI取得
             auto dc = GetWindowDC(NULL);
-            g_dpix = GetDeviceCaps(dc, LOGPIXELSX);
-            g_dpiy = GetDeviceCaps(dc, LOGPIXELSY);
-            g_dpiScale = g_dpix / 96.0f;
+            g_dpiX = GetDeviceCaps(dc, LOGPIXELSX);
+            g_dpiY = GetDeviceCaps(dc, LOGPIXELSY);
+            g_dpiScale = g_dpiX / 96.0f;
             ReleaseDC(NULL, dc);
 
             // GDI+, Direct2D 初期化
@@ -377,10 +377,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_DPICHANGED:
         Logger::d(L"DPICHANGED, %d,%d", LOWORD(wParam), HIWORD(wParam));
-        g_dpix = LOWORD(wParam);
-        g_dpiy = HIWORD(wParam);
-        g_dpiScale = g_dpix / 96.0f;
-        g_meterDrawer.SetDpi((float)g_dpix, (float)g_dpiy);
+        g_dpiX = LOWORD(wParam);
+        g_dpiY = HIWORD(wParam);
+        g_dpiScale = g_dpiX / 96.0f;
+        g_meterDrawer.SetDpi((float)g_dpiX, (float)g_dpiY);
         return 0;
 
     case WM_CONFIG_DLG_UPDATED:

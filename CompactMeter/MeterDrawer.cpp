@@ -4,26 +4,28 @@
 #include "IniConfig.h"
 #include "Logger.h"
 
-extern int g_dpix;
-extern int g_dpiy;
+extern int g_dpiX;
+extern int g_dpiY;
 extern float g_dpiScale;
 extern IniConfig* g_pIniConfig;
 
 void MeterDrawer::Init(HWND hWnd, int width, int height)
 {
-    HRESULT hr = CreateDeviceIndependentResources();
+    const HRESULT hr = CreateDeviceIndependentResources();
     if (FAILED(hr)) return;
 
     // Direct2D 初期化
     CreateDeviceResources(hWnd, width, height);
 }
 
-void MeterDrawer::Resize(HWND hWnd, int width, int height)
+void MeterDrawer::Resize(HWND hWnd, int width, int height) const
 {
     m_pRenderTarget->Resize(D2D1::SizeU(width, height));
 }
 
-void MeterDrawer::Shutdown() {
+// ReSharper disable once CppMemberFunctionMayBeStatic
+void MeterDrawer::Shutdown() const
+{
 
 }
 
@@ -31,13 +33,12 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 {
     criticalSection.Lock();
 
-    HRESULT hr;
     RECT rc;
 
     GetClientRect(hWnd, &rc);
 
     // Create the DC render target.
-    hr = CreateDeviceResources(hWnd, rc.right, rc.bottom);
+    HRESULT hr = CreateDeviceResources(hWnd, rc.right, rc.bottom);
 
     if (SUCCEEDED(hr))
     {
@@ -58,6 +59,7 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 
     if (hr == D2DERR_RECREATE_TARGET)
     {
+        // ReSharper disable once CppAssignedValueIsNeverUsed
         hr = S_OK;
 
         Logger::d(L"D2DERR_RECREATE_TARGET");
@@ -70,7 +72,7 @@ void MeterDrawer::DrawToDC(HDC hdc, HWND hWnd, CWorker * pWorker)
 
 void MeterDrawer::InitMeterGuide() {
 
-    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
+    const DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
 
     int i = 0;
     m_netGuides[i++] = { KbToPercent(1'000'000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1G" };
@@ -79,15 +81,14 @@ void MeterDrawer::InitMeterGuide() {
     m_netGuides[i++] = { KbToPercent(    1'000, maxTrafficKB), D2D1::ColorF(0xFF4040), L"1M" };
     m_netGuides[i++] = { KbToPercent(      100, maxTrafficKB), D2D1::ColorF(0xFF8040), L"100K" };
     m_netGuides[i++] = { KbToPercent(       10, maxTrafficKB), D2D1::ColorF(0xC0C040), L"10K" };
+    // ReSharper disable once CppAssignedValueIsNeverUsed
     m_netGuides[i++] = {                                  0.0, D2D1::ColorF(0xC0C0C0), L"" };
 }
 
 HRESULT MeterDrawer::CreateDeviceIndependentResources()
 {
-    HRESULT hr;
-
     // Direct2D factory
-    hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2DFactory);
+    HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2DFactory);
     if (FAILED(hr)) {
         Logger::d(L"cannot init D2D1Factory");
         return hr;
@@ -103,28 +104,28 @@ HRESULT MeterDrawer::CreateDeviceIndependentResources()
     // PathGeometry
     // (0, 0) を原点に 100 のサイズで描画
     {
-        HRESULT hr = m_pD2DFactory->CreatePathGeometry(&m_pPathGeometry);
+        HRESULT hr2 = m_pD2DFactory->CreatePathGeometry(&m_pPathGeometry);
 
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(hr2))
         {
-            ID2D1GeometrySink *pSink = NULL;
+            ID2D1GeometrySink *pSink = nullptr;
 
             // Write to the path geometry using the geometry sink.
-            hr = m_pPathGeometry->Open(&pSink);
+            hr2 = m_pPathGeometry->Open(&pSink);
 
-            if (SUCCEEDED(hr))
+            if (SUCCEEDED(hr2))
             {
                 pSink->BeginFigure(
                     D2D1::Point2F(0, 0),
                     D2D1_FIGURE_BEGIN_FILLED
                 );
 
-                float length0 = 100.0;
+                const float length0 = 100.0;
 
-                float x1 = -length0 * cosf(PI * PMIN / 180);
-                float y1 = -length0 * sinf(PI * PMIN / 180);
-                float x2 = -length0 * cosf(PI * PMAX / 180);
-                float y2 = -length0 * sinf(PI * PMAX / 180);
+                const float x1 = -length0 * cosf(PI * P_MIN / 180);
+                const float y1 = -length0 * sinf(PI * P_MIN / 180);
+                const float x2 = -length0 * cosf(PI * P_MAX / 180);
+                const float y2 = -length0 * sinf(PI * P_MAX / 180);
 
 
                 pSink->AddLine(D2D1::Point2F(x1, y1));
@@ -169,7 +170,8 @@ HRESULT MeterDrawer::CreateDeviceIndependentResources()
 
                 pSink->EndFigure(D2D1_FIGURE_END_OPEN);
 
-                hr = pSink->Close();
+                // ReSharper disable once CppAssignedValueIsNeverUsed
+                hr2 = pSink->Close();
             }
 
             SafeRelease(&pSink);
@@ -226,10 +228,10 @@ void MeterDrawer::Draw(HWND hWnd, CWorker* pWorker)
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
     m_pRenderTarget->Clear(D2D1::ColorF(0x0A0A0A));
 
-    float screenWidth = (float)g_pIniConfig->mWindowWidth;
-    float screenHeight = (float)g_pIniConfig->mWindowHeight;
+    const auto screenWidth = static_cast<float>(g_pIniConfig->mWindowWidth);
+    const auto screenHeight = static_cast<float>(g_pIniConfig->mWindowHeight);
 
-    if (pWorker != NULL && pWorker->traffics.size() >= 2) {
+    if (pWorker != nullptr && pWorker->traffics.size() >= 2) {
 
         pWorker->criticalSection.Lock();
 
@@ -364,9 +366,9 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
             L"計測=%5.1fms\n"
             , iCalled, m_fpsCounter.GetAverageFps(), g_pIniConfig->mFps
             , pWorker->traffics.size(), screenWidth, screenHeight
-            , (LPCTSTR)strDateTime
+            , static_cast<LPCTSTR>(strDateTime)
             , boxSize
-            , g_dpix, g_dpiy, g_dpiScale
+            , g_dpiX, g_dpiY, g_dpiScale
             , duration1 / 1000.0
             , duration2 / 1000.0
             , durationWorker / 1000.0
@@ -381,8 +383,9 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
         if (CreateMyTextFormat(12.0f / g_dpiScale, &pTextFormat)) {
             m_stopWatch2.Stop();
 
+            auto layout_rect = D2D1::RectF(4, y+4, screenWidth, screenHeight);
             m_pRenderTarget->DrawText(str, str.GetLength(), pTextFormat,
-                &D2D1::RectF(4, y+4, screenWidth, screenHeight), m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
+                &layout_rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
                 DWRITE_MEASURING_MODE_NATURAL);
             SafeRelease(&pTextFormat);
         }
@@ -397,23 +400,23 @@ void MeterDrawer::DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, flo
  * 
  * 描画できた要素数を返す
  */
-int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float left, float &y, float right, float bottom, int depth)
+int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float left, float &y, float right, float bottom, int depth) const
 {
     float x = left;
 
     int nDrawn = 0;
-    for (int i = startIndex; i < (int)meters.size(); i++) {
+    for (int i = startIndex; i < static_cast<int>(meters.size()); i++) {
         MeterInfo* pmi = meters[i];
 
-        float size = boxSize / pmi->div;
+        const float size = boxSize / pmi->div;
 
-        if (pmi->children.size() >= 1) {
+        if (!pmi->children.empty()) {
             
             // 子要素全てを再帰的に描画する
             for (int iChildren = 0; ; ) {
 
                 float y1 = y;
-                int n = DrawMetersRecursive(pmi->children, iChildren, boxSize, x, y1, x + boxSize, y + boxSize, depth+1);
+                const int n = DrawMetersRecursive(pmi->children, iChildren, boxSize, x, y1, x + boxSize, y + boxSize, depth+1);
                 if (n == 0) {
                     return nDrawn;
                 }
@@ -426,7 +429,7 @@ int MeterDrawer::DrawMetersRecursive(std::vector<MeterInfo *> &meters, int start
                     return nDrawn;
                 }
 
-                if (iChildren >= (int)pmi->children.size()) {
+                if (iChildren >= static_cast<int>(pmi->children.size())) {
                     // 全て描画し終わったので終了
                     break;
                 }
@@ -513,7 +516,7 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
     for (int i = 0; i < nCore; i++) {
 
         // children はスコープ外で自動削除される
-        MeterInfo* pmi = new MeterInfo();
+        auto pmi = new MeterInfo();
         coreMeters.children.push_back(pmi);
         MeterInfo& mi = *pmi;
 
@@ -542,7 +545,7 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
         //printf("ullTotalVirtual  %I64d\n", ms.ullTotalVirtual);      // 仮想メモリの搭載容量
         //printf("ullAvailVirtual  %I64d\n", ms.ullAvailVirtual);      // 仮想メモリの空き容量
 
-        DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
+        const DWORDLONG ullUsing = ms.ullTotalPhys - ms.ullAvailPhys;
 
         MeterInfo& mi = memoryMeter;
         mi.percent = ullUsing * 100.0f / ms.ullTotalPhys;
@@ -553,16 +556,16 @@ void MeterDrawer::MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInf
 
 void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &driveMeters)
 {
-    if (pWorker->driveUsages.size() == 0) {
+    if (pWorker->driveUsages.empty()) {
         return;
     }
 
     DriveUsage driveUsage;
     pWorker->GetDriveUsages(&driveUsage);
 
-    size_t nDrive = driveUsage.letters.size();
+    const size_t nDrive = driveUsage.letters.size();
 
-    long maxDriveKB = 10 * 1024 * 1024;
+    const long maxDriveKB = 10 * 1024 * 1024;
     // TODO メンバーにすること
     static MeterGuide driveGuides[] = {
         { KbToPercent(10'000'000, maxDriveKB), D2D1::ColorF(0xFF4040), L"10G" },
@@ -581,7 +584,7 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
         {
             MeterInfo& mi = addMeter(driveMeters);
 
-            long kb = driveUsage.writeUsages[i] / 1024;
+            const long kb = driveUsage.writeUsages[i] / 1024;
             mi.percent = KbToPercentL(kb, maxDriveKB);
             mi.label.Format(L"%c: Write ", driveUsage.letters[i]);
             AppendFormatOfKb(kb, mi);
@@ -591,7 +594,7 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
         {
             MeterInfo& mi = addMeter(driveMeters);
 
-            long kb = driveUsage.readUsages[i] / 1024;
+            const long kb = driveUsage.readUsages[i] / 1024;
             mi.percent = KbToPercentL(kb, maxDriveKB);
             mi.label.Format(L"%c: Read ", driveUsage.letters[i]);
             AppendFormatOfKb(kb, mi);
@@ -602,40 +605,40 @@ void MeterDrawer::MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &
 
 void MeterDrawer::MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn)
 {
-    DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
+    const DWORD maxTrafficKB = g_pIniConfig->mTrafficMax / 1000;
 
     const Traffic& t = pWorker->traffics.back();    // 一番新しいもの
     const Traffic& t0 = pWorker->traffics.front();  // 一番古いもの
 
-    DWORD duration = t.tick - t0.tick;
+    const DWORD duration = t.tick - t0.tick;
 
     // duration が ms なので *1000 してから除算
-    float inb = (t.in - t0.in) * 1000.0f / duration;
-    float outb = (t.out - t0.out) * 1000.0f / duration;
+    const float inByte = (t.in - t0.in) * 1000.0f / duration;
+    const float outByte = (t.out - t0.out) * 1000.0f / duration;
 
     // KB単位
-    inb /= 1000;
-    outb /= 1000;
+    const float inKb = inByte / 1000;
+    const float outKb = outByte / 1000;
 
     // Up(KB単位)
     {
-        float percent = outb == 0 ? 0.0f : KbToPercent(outb, maxTrafficKB);
+        float percent = outKb == 0 ? 0.0f : KbToPercent(outKb, maxTrafficKB);
         percent = percent < 0.0f ? 0.0f : percent;
 
         MeterInfo& mi = netMeterOut;
         mi.percent = percent;
-        mi.label.Format(L"▲ %.1f KB/s", outb);
+        mi.label.Format(L"▲ %.1f KB/s", outKb);
         mi.guides = m_netGuides;
     }
 
     // Down(KB単位)
     {
-        float percent = inb == 0 ? 0.0f : KbToPercent(inb, maxTrafficKB);
+        float percent = inKb == 0 ? 0.0f : KbToPercent(inKb, maxTrafficKB);
         percent = percent < 0.0f ? 0.0f : percent;
 
         MeterInfo& mi = netMeterIn;
         mi.percent = percent;
-        mi.label.Format(L"▼ %.1f KB/s", inb);
+        mi.label.Format(L"▼ %.1f KB/s", inKb);
         mi.guides = m_netGuides;
     }
 }
@@ -655,24 +658,25 @@ void MeterDrawer::AppendFormatOfKb(long kb, MeterInfo & mi)
  *
  * colors, guideLines の最後は必ず percent=0.0 にすること
  */
-void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
+void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi) const
 {
     // 単純に小さくすると見えなくなるので少し大きくするためのスケーリング
-    float fontScale = 1.0f;
+    float font_scale;
     switch (mi.div) {
-    case 2:
-        fontScale = 1.4f;
-        break;
     case 4:
-        fontScale = 2.0f;
+        font_scale = 2.0f;
+        break;
+    case 2:
+    default: 
+        font_scale = 1.4f;
         break;
     }
 
     float percent = mi.percent;
     const WCHAR* str = mi.label;
     MeterGuide* guideLines = mi.guides;
-        
-    auto size = rect.right - rect.left;
+
+    const auto size = rect.right - rect.left;
 
     if (percent < 0.0f) {
         percent = 0.0f;
@@ -697,7 +701,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
     // 背景
     //--------------------------------------------------
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-    if (mi.pConfig != NULL) {
+    if (mi.pConfig != nullptr) {
         m_pBrush->SetColor(D2D1::ColorF(mi.pConfig->backgroundColor));
         rect.right += 1;
         rect.bottom += 1;
@@ -716,7 +720,7 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
         m_pRenderTarget->DrawRectangle(rect, m_pBrush);
     }
 
-    float margin = size / 50;
+    const float margin = size / 50;
     rect.left += margin;
     rect.top += margin;
     rect.right -= margin;
@@ -725,19 +729,21 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
     //--------------------------------------------------
     // ラベル
     //--------------------------------------------------
-    float scale = 1 * size / 150.0f * fontScale;
+    const float scale = 1 * size / 150.0f * font_scale;
 
     m_pBrush->SetColor(color);
     m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 
     // TextFormat
-    IDWriteTextFormat* pTextFormat;
-    if (CreateMyTextFormat(11 * scale, &pTextFormat)) {
+    {
+        IDWriteTextFormat* pTextFormat;
+        if (CreateMyTextFormat(11 * scale, &pTextFormat)) {
 
-        m_pRenderTarget->DrawText(str, (UINT32)wcslen(str), pTextFormat,
-            rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
-            DWRITE_MEASURING_MODE_NATURAL);
-        SafeRelease(&pTextFormat);
+            m_pRenderTarget->DrawText(str, static_cast<UINT32>(wcslen(str)), pTextFormat,
+                                      rect, m_pBrush, D2D1_DRAW_TEXT_OPTIONS_NO_SNAP,
+                                      DWRITE_MEASURING_MODE_NATURAL);
+            SafeRelease(&pTextFormat);
+        }
     }
 
 
@@ -748,15 +754,15 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
     // メーター描画
     //--------------------------------------------------
 
-    float mw = rect.right - rect.left;
-    float length0 = mw / 2;
+    const float mw = rect.right - rect.left;
+    const float length0 = mw / 2;
 
 
     // 外枠
     D2D1_POINT_2F center = { rect.left + mw / 2, rect.top + mw / 2 };
 
     {
-        D2D1::Matrix3x2F matrix1 =
+        const D2D1::Matrix3x2F matrix1 =
             // サイズ 100 で描画されているので拡縮する
             D2D1::Matrix3x2F::Scale({ length0 / 100.0f, length0 / 100.0f })
             *
@@ -777,18 +783,18 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
             continue;
         }
 
-        float angle = guideLines[i].percent / 100.0f * (PMAX - PMIN) + PMIN;
+        const float angle = guideLines[i].percent / 100.0f * (P_MAX - P_MIN) + P_MIN;
         m_pBrush->SetColor(guideLines[i].color);
         DrawLineByAngle(center, angle,
             length0 * 0.85f, length0,
             0.8f * scale);
 
-        LPCWSTR text = guideLines[i].text;
+        const LPCWSTR text = guideLines[i].text;
         if (wcslen(text) >= 1) {
-            float rad = PI * angle / 180;
-            float w = length0 / 3;
-            float h = length0 / 5;
-            float length = length0 * 0.72f;
+            const float rad = PI * angle / 180;
+            const float w = length0 / 3;
+            const float h = length0 / 5;
+            const float length = length0 * 0.72f;
 
             D2D1_RECT_F rect1 = { 
                 center.x - length * cosf(rad),
@@ -807,8 +813,8 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
             IDWriteTextFormat* pTextFormat;
             if (CreateMyTextFormat(8 * scale, &pTextFormat)) {
 
-                IDWriteTextLayout* pTextLayout = NULL;
-                if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, (UINT32)wcslen(text), pTextFormat, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
+                IDWriteTextLayout* pTextLayout = nullptr;
+                if (SUCCEEDED(m_pDWFactory->CreateTextLayout(text, static_cast<UINT32>(wcslen(text)), pTextFormat, rect1.right - rect1.left, rect1.bottom - rect1.top, &pTextLayout))) {
 
                     pTextLayout->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
                     m_pRenderTarget->DrawTextLayout(D2D1::Point2F(rect1.left, rect1.top), pTextLayout, m_pBrush);
@@ -825,13 +831,13 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi)
 
 
     // 針を描く
-    float strokeWidth = 3 * scale;
-    float angle = percent / 100.0f * (PMAX - PMIN) + PMIN;
+    const float strokeWidth = 3 * scale;
+    const float angle = percent / 100.0f * (P_MAX - P_MIN) + P_MIN;
     m_pBrush->SetColor(color);
     DrawLineByAngle(center, angle, 0, length0 * 0.9f, strokeWidth);
 }
 
-void MeterDrawer::DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth)
+void MeterDrawer::DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth) const
 {
     m_pRenderTarget->SetTransform(
         D2D1::Matrix3x2F::Rotation(angle)
@@ -845,11 +851,11 @@ void MeterDrawer::DrawLineByAngle(D2D1_POINT_2F& center, float angle, float leng
         strokeWidth);
 }
 
-bool MeterDrawer::CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) {
-
-    HRESULT hr = m_pDWFactory->CreateTextFormat(
+bool MeterDrawer::CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) const
+{
+    const HRESULT hr = m_pDWFactory->CreateTextFormat(
         L"メイリオ"
-        , NULL
+        , nullptr
         , DWRITE_FONT_WEIGHT_NORMAL
         , DWRITE_FONT_STYLE_NORMAL
         , DWRITE_FONT_STRETCH_NORMAL

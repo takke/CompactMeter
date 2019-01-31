@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Worker.h"
-#include "Const.h"
 #include "FpsCounter.h"
 #include "StopWatch.h"
 #include "MeterConfig.h"
@@ -36,9 +35,9 @@ struct MeterInfo {
 
     MeterInfo()
         : percent(0.0f)
-        , guides(NULL)
+        , guides(nullptr)
         , div(1)
-        , pConfig(NULL)
+        , pConfig(nullptr)
     {}
 
     ~MeterInfo() {
@@ -55,8 +54,8 @@ private:
     FpsCounter  m_fpsCounter;
 
     // 左下、右下の角度
-    const float PMIN = -30;
-    const float PMAX = 180 - PMIN;
+    const float P_MIN = -30;
+    const float P_MAX = 180 - P_MIN;
 
     // デバッグ用計測器
     StopWatch   m_stopWatch1;
@@ -81,11 +80,11 @@ public:
     CComCriticalSection criticalSection;
 
     MeterDrawer()
-        : m_pRenderTarget(NULL)
-        , m_pBrush(NULL)
-        , m_pD2DFactory(NULL)
-        , m_pPathGeometry(NULL)
-        , m_pDWFactory(NULL)
+        : m_pRenderTarget(nullptr)
+        , m_pBrush(nullptr)
+        , m_pD2DFactory(nullptr)
+        , m_pPathGeometry(nullptr)
+        , m_pDWFactory(nullptr)
     {
         criticalSection.Init();
     }
@@ -97,11 +96,11 @@ public:
     }
 
     void Init(HWND hWnd, int width, int height);
-    void Resize(HWND hWnd, int width, int height);
-    void SetDpi(float dpix, float dpiy) {
-        m_pRenderTarget->SetDpi(dpix, dpiy);
+    void Resize(HWND hWnd, int width, int height) const;
+    void SetDpi(float dpiX, float dpiY) const {
+        m_pRenderTarget->SetDpi(dpiX, dpiY);
     }
-    void Shutdown();
+    void Shutdown() const;
 
     void DrawToDC(HDC hdc, HWND hWnd, CWorker* pWorker);
 
@@ -128,30 +127,31 @@ private:
     void Draw(HWND hWnd, CWorker* pWorker);
     void DrawMeters(HWND hWnd, CWorker* pWorker, float screenWidth, float screenHeight);
 
-    int DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float baseX, float &y, float width, float height, int depth);
+    int DrawMetersRecursive(std::vector<MeterInfo *> &meters, int startIndex, float boxSize, float left, float &y, float
+                            right, float bottom, int depth) const;
 
-    bool MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom);
+    static bool MoveToNextBox(float &x, float & y, float size, float left, float right, float bottom);
 
     void MakeNetworkMeterInfo(CWorker * pWorker, MeterInfo &netMeterOut, MeterInfo &netMeterIn);
-    void MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, MeterInfo &coreMeters, MeterInfo &memoryInfo);
+    static void MakeCpuMemoryMeterInfo(int &nCore, CWorker * pWorker, MeterInfo &cpuMeter, MeterInfo &coreMeters, MeterInfo &memoryInfo);
     void MakeDriveMeterInfo(CWorker * pWorker, std::vector<MeterInfo> &driveMeters);
 
-    void AppendFormatOfKb(long kb, MeterInfo & mi);
-    void DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi);
-    void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth);
-    bool CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat);
+    static void AppendFormatOfKb(long kb, MeterInfo & mi);
+    void DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi) const;
+    void DrawLineByAngle(D2D1_POINT_2F& center, float angle, float length1, float length2, float strokeWidth) const;
+    bool CreateMyTextFormat(float fontSize, IDWriteTextFormat** ppTextFormat) const;
 
-    inline float KbToPercent(float kb, const DWORD &maxTrafficBytes)
+    static inline float KbToPercent(float kb, const DWORD &maxTrafficBytes)
     {
-        return (log10f((float)kb) / log10f((float)maxTrafficBytes))*100.0f;
+        return (log10f(static_cast<float>(kb)) / log10f(static_cast<float>(maxTrafficBytes)))*100.0f;
     }
 
-    inline float KbToPercentL(long kb, const DWORD &maxTrafficBytes)
+    static inline float KbToPercentL(long kb, const DWORD &maxTrafficBytes)
     {
-        return (log10f((float)kb) / log10f((float)maxTrafficBytes))*100.0f;
+        return (log10f(static_cast<float>(kb)) / log10f(static_cast<float>(maxTrafficBytes)))*100.0f;
     }
 
-    inline MeterInfo& addMeter(std::vector<MeterInfo>& meters) {
+    static inline MeterInfo& addMeter(std::vector<MeterInfo>& meters) {
         meters.resize(meters.size() + 1);
         return meters[meters.size() - 1];
     }
