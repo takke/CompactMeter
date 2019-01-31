@@ -12,29 +12,29 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_INITDIALOG:
         {
-            CString appname;
-            MyUtil::GetAppNameWithVersion(appname);
-            SetDlgItemText(hDlg, IDC_APPNAME_STATIC, appname);
+            CString appName;
+            MyUtil::GetAppNameWithVersion(appName);
+            SetDlgItemText(hDlg, IDC_APPNAME_STATIC, appName);
         }
-        return (INT_PTR)TRUE;
+        return static_cast<INT_PTR>(TRUE);
 
     case WM_COMMAND:
         if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
         {
             EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
         }
         break;
 
     case WM_NOTIFY:
-        switch (((LPNMHDR)lParam)->code) {
+        switch (reinterpret_cast<LPNMHDR>(lParam)->code) {
         case NM_CLICK:
-            PNMLINK pNMLink = (PNMLINK)lParam;
+            PNMLINK pNMLink = reinterpret_cast<PNMLINK>(lParam);
             Logger::d(L"NM_CLICK: %s", pNMLink->item.szUrl);
-            ShellExecuteW(NULL, L"open", pNMLink->item.szUrl, NULL, NULL, SW_SHOWNORMAL);
+            ShellExecuteW(nullptr, L"open", pNMLink->item.szUrl, nullptr, nullptr, SW_SHOWNORMAL);
             return 0L;
         }
         break;
     }
-    return (INT_PTR)FALSE;
+    return static_cast<INT_PTR>(FALSE);
 }

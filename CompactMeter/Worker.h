@@ -39,8 +39,8 @@ public:
 
 
 public:
-    CWorker(void);
-    ~CWorker(void);
+    CWorker();
+    ~CWorker();
 
     void SetParams(HWND hWnd);
     static DWORD WINAPI ThreadFunc(LPVOID lpParameter);
@@ -50,15 +50,15 @@ public:
     void GetDriveUsages(DriveUsage* out);
 
 private:
-    HWND hWnd;
+    HWND hWnd = nullptr;
 
 
     bool myExitFlag; // 終了指示を保持するフラグ 
     HANDLE myMutex;  // 排他制御
 
     DWORD WINAPI ExecThread();
-    bool InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProcessors, std::vector<PDH_HQUERY> &hCounter);
-    bool InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<PDH_HQUERY> &hDriveWriteCounter, std::vector<PDH_HQUERY> &hDriveReadQuery, std::vector<PDH_HQUERY> &hDriveReadCounter, int &nDrives);
+    static bool InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProcessors, std::vector<PDH_HQUERY> &hCounter);
+    static bool InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<PDH_HQUERY> &hDriveWriteCounter, std::vector<PDH_HQUERY> &hDriveReadQuery, std::vector<PDH_HQUERY> &hDriveReadCounter, int &nDrives);
     void CollectCpuUsage(const int &nProcessors, std::vector<PDH_HQUERY> &hQuery, std::vector<PDH_HQUERY> &hCounter, PDH_FMT_COUNTERVALUE &fntValue);
     void CollectDriveUsage(int nDrives, std::vector<PDH_HQUERY> &hDriveReadQuery, std::vector<PDH_HCOUNTER> &hDriveReadCounter,
         PDH_FMT_COUNTERVALUE &fntValue, std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<PDH_HCOUNTER> &hDriveWriteCounter);

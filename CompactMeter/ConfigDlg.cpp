@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ConfigDlg.h"
 #include "Logger.h"
-#include "resource.h"
+#include "Resource.h"
 #include "IniConfig.h"
 #include "MeterDrawer.h"
 #include "MyUtil.h"
@@ -10,7 +10,6 @@
 extern HWND        g_hConfigDlgWnd;
 extern IniConfig*  g_pIniConfig;
 extern HWND        g_hWnd;
-extern WCHAR       g_szAppTitle[MAX_LOADSTRING];
 extern MeterDrawer g_meterDrawer;
 
 struct TRAFFIC_MAX_COMBO_DATA {
@@ -23,7 +22,7 @@ TRAFFIC_MAX_COMBO_DATA TRAFFIC_MAX_COMBO_VALUES[] = {
     { L"300MB", 300 * MB},
     { L"1GB", 1 * GB},
     { L"2GB", 2 * GB},
-    { NULL, 0}
+    {nullptr, 0}
 };
 
 static bool initializing = false;
@@ -62,16 +61,16 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         SetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, g_pIniConfig->mColumnCount, FALSE);
 
         // 最大通信量
-        HWND hTraffixMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
+        HWND hTrafficMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
         int iSelected = 0;
-        for (int i = 0; TRAFFIC_MAX_COMBO_VALUES[i].label != NULL; i++) {
-            SendMessage(hTraffixMaxCombo, CB_ADDSTRING, NULL, (WPARAM)TRAFFIC_MAX_COMBO_VALUES[i].label);
+        for (int i = 0; TRAFFIC_MAX_COMBO_VALUES[i].label != nullptr; i++) {
+            SendMessage(hTrafficMaxCombo, CB_ADDSTRING, NULL, reinterpret_cast<WPARAM>(TRAFFIC_MAX_COMBO_VALUES[i].label));
 
             if (g_pIniConfig->mTrafficMax == TRAFFIC_MAX_COMBO_VALUES[i].value) {
                 iSelected = i;
             }
         }
-        SendMessage(hTraffixMaxCombo, CB_SETCURSEL, iSelected, 0);
+        SendMessage(hTrafficMaxCombo, CB_SETCURSEL, iSelected, 0);
 
         // ESCキーでウィンドウを閉じる
         CheckDlgButton(hDlg, IDC_CLOSE_WINDOW_BY_ESC_CHECK, g_pIniConfig->mCloseByESC ? BST_CHECKED : BST_UNCHECKED);
@@ -81,7 +80,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
 
             // 拡張スタイル設定
-            DWORD dwStyle = ListView_GetExtendedListViewStyle(hList);
+            auto dwStyle = ListView_GetExtendedListViewStyle(hList);
             dwStyle |= LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES;
             ListView_SetExtendedListViewStyle(hList, dwStyle);
 
@@ -90,10 +89,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
             lvc.fmt = LVCFMT_LEFT;
 
-            LPCWSTR strItem0[] = { L"メーター名", L"背景色", NULL };
+            LPCWSTR strItem0[] = { L"メーター名", L"背景色", nullptr };
             int CX[] = { 220, 100 };
 
-            for (int i = 0; strItem0[i] != NULL; i++)
+            for (int i = 0; strItem0[i] != nullptr; i++)
             {
                 lvc.iSubItem = i;
                 lvc.cx = CX[i];
@@ -115,7 +114,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 WCHAR szText[256];
                 item.pszText = szText;
                 wcscpy_s(szText, mc.getName());
-                item.iItem = (int)i;
+                item.iItem = static_cast<int>(i);
                 item.iSubItem = 0;
                 ListView_InsertItem(hList, &item);
 
@@ -141,7 +140,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
         initializing = false;
 
-        return (INT_PTR)TRUE;
+        return static_cast<INT_PTR>(TRUE);
     }
 
     case WM_COMMAND:
@@ -150,13 +149,13 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         case IDCANCEL:
             Logger::d(L"ConfigDlg, close");
             EndDialog(hDlg, LOWORD(wParam));
-            g_hConfigDlgWnd = NULL;
-            return (INT_PTR)TRUE;
+            g_hConfigDlgWnd = nullptr;
+            return static_cast<INT_PTR>(TRUE);
 
         case IDC_TRAFFIC_MAX_COMBO:
             if (HIWORD(wParam) == CBN_SELCHANGE) {
-                HWND hTraffixMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
-                int iSelected = (int)SendMessage(hTraffixMaxCombo, CB_GETCURSEL, 0, 0);
+                HWND hTrafficMaxCombo = GetDlgItem(hDlg, IDC_TRAFFIC_MAX_COMBO);
+                int iSelected = static_cast<int>(SendMessage(hTrafficMaxCombo, CB_GETCURSEL, 0, 0));
 
                 g_pIniConfig->mTrafficMax = TRAFFIC_MAX_COMBO_VALUES[iSelected].value;
 
@@ -167,36 +166,36 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 // UIに反映するために変更通知
                 ::PostMessage(g_hWnd, WM_CONFIG_DLG_UPDATED, 0, 0);
             }
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
 
         case IDC_CLOSE_WINDOW_BY_ESC_CHECK:
             if (HIWORD(wParam) == BN_CLICKED) {
                 g_pIniConfig->mCloseByESC = IsDlgButtonChecked(hDlg, IDC_CLOSE_WINDOW_BY_ESC_CHECK) == BST_CHECKED;
                 g_pIniConfig->Save();
             }
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
 
         case IDC_MOVE_UP_BUTTON:
             Logger::d(L"up");
             MoveMeterPos(hDlg, true);
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
 
         case IDC_MOVE_DOWN_BUTTON:
             Logger::d(L"down");
             MoveMeterPos(hDlg, false);
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
 
         case IDC_CHOOSE_COLOR_BUTTON:
             DoChooseColor(hDlg);
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
 
         case IDC_REGISTER_STARTUP_BUTTON:
             RegisterStartup(true, hDlg);
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
 
         case IDC_UNREGISTER_STARTUP_BUTTON:
             RegisterStartup(false, hDlg);
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
         }
         break;
 
@@ -204,10 +203,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         switch (wParam) {
         case IDC_FPS_SPIN:
             {
-                LPNMUPDOWN lpnmUpdown = (LPNMUPDOWN)lParam;
+                auto lpnmUpdown = reinterpret_cast<LPNMUPDOWN>(lParam);
                 if (lpnmUpdown->hdr.code == UDN_DELTAPOS) {
 
-                    int n = GetDlgItemInt(hDlg, IDC_FPS_EDIT, NULL, FALSE);
+                    int n = GetDlgItemInt(hDlg, IDC_FPS_EDIT, nullptr, FALSE);
 
                     if (lpnmUpdown->iDelta > 0) {
                         Logger::d(L"down");
@@ -229,10 +228,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
         case IDC_METER_COLUMN_COUNT_SPIN:
             {
-                LPNMUPDOWN lpnmUpdown = (LPNMUPDOWN)lParam;
+                auto lpnmUpdown = reinterpret_cast<LPNMUPDOWN>(lParam);
                 if (lpnmUpdown->hdr.code == UDN_DELTAPOS) {
 
-                    const int n0 = GetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, NULL, FALSE);
+                    const int n0 = GetDlgItemInt(hDlg, IDC_METER_COLUMN_COUNT_EDIT, nullptr, FALSE);
                     int n = n0;
 
                     if (lpnmUpdown->iDelta > 0) {
@@ -258,7 +257,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                         const int box = g_pIniConfig->mWindowWidth / n0;
                         const int w = __max(box * n, MAIN_WINDOW_MIN_WIDTH);
                         const int h = MyUtil::CalcMeterWindowHeight(w);
-                        ::SetWindowPos(g_hWnd, NULL, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+                        ::SetWindowPos(g_hWnd, nullptr, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
 
                         // g_pIniConfig->mWindowWidth 等の更新、Direct2D バッファのリサイズは WM_SIZE 内で行われる
 
@@ -272,7 +271,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
         case IDC_METER_CONFIG_LIST:
             {
-                LPNMHDR lpNMHDR = (LPNMHDR)lParam;
+                auto lpNMHDR = reinterpret_cast<LPNMHDR>(lParam);
 
                 switch (lpNMHDR->code) {
                 case LVN_ITEMCHANGED:
@@ -282,11 +281,11 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
                         HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
 
-                        LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lParam;
+                        auto pnmv = reinterpret_cast<LPNMLISTVIEW>(lParam);
                         Logger::d(L"item changed %d:%d", pnmv->iItem, pnmv->iSubItem);
 
                         auto& configs = g_pIniConfig->mMeterConfigs;
-                        if (0 <= pnmv->iItem && pnmv->iItem < (int)configs.size() && pnmv->iSubItem == 0) {
+                        if (0 <= pnmv->iItem && pnmv->iItem < static_cast<int>(configs.size()) && pnmv->iSubItem == 0) {
                             // チェック状態が変わったかもしれないので反映する
                             configs[pnmv->iItem].enable = ListView_GetCheckState(hList, pnmv->iItem) == TRUE;
                         }
@@ -300,7 +299,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 }
 
             }
-            return (INT_PTR)TRUE;
+            return static_cast<INT_PTR>(TRUE);
         }
         break;
 
@@ -315,26 +314,26 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         }
         break;
     }
-    return (INT_PTR)FALSE;
+    return static_cast<INT_PTR>(FALSE);
 }
 
 void DoChooseColor(HWND hDlg)
 {
-    HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
+    const HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
 
-    int iSelected = GetSelectedMeterConfigListIndex(hList);
+    const int iSelected = GetSelectedMeterConfigListIndex(hList);
     if (iSelected == -1) {
         Logger::d(L"no selection");
         return;
     }
 
-    if (iSelected >= (int)g_pIniConfig->mMeterConfigs.size()) {
+    if (iSelected >= static_cast<int>(g_pIniConfig->mMeterConfigs.size())) {
         Logger::d(L"invalid index %d", iSelected);
         return;
     }
 
     CHOOSECOLOR cc = { 0 };
-    static COLORREF CustColors[16] = {
+    static COLORREF custColors[16] = {
         RGB(0x00, 0x00, 0x10), RGB(0x00, 0x10, 0x00), RGB(0x10, 0x00, 0x00),
         RGB(0x00, 0x00, 0x20), RGB(0x00, 0x20, 0x00), RGB(0x20, 0x00, 0x00),
         RGB(0x00, 0x10, 0x10), RGB(0x10, 0x10, 0x00), RGB(0x10, 0x00, 0x10),
@@ -350,7 +349,7 @@ void DoChooseColor(HWND hDlg)
     cc.rgbResult = MyUtil::direct2DColorToRGB(c);
     Logger::d(L"color: %08x -> %08x", c, cc.rgbResult);
 
-    cc.lpCustColors = CustColors;
+    cc.lpCustColors = custColors;
     cc.Flags = CC_FULLOPEN | CC_RGBINIT;
 
     // カラー選択
@@ -375,8 +374,8 @@ void DoChooseColor(HWND hDlg)
 void UpdateRegisterButtons(const HWND &hDlg)
 {
     // 盾アイコン
-    HWND hRegisterButton = ::GetDlgItem(hDlg, IDC_REGISTER_STARTUP_BUTTON);
-    HWND hUnregisterButton = ::GetDlgItem(hDlg, IDC_UNREGISTER_STARTUP_BUTTON);
+    const HWND hRegisterButton = ::GetDlgItem(hDlg, IDC_REGISTER_STARTUP_BUTTON);
+    const HWND hUnregisterButton = ::GetDlgItem(hDlg, IDC_UNREGISTER_STARTUP_BUTTON);
     ::SendMessage(hRegisterButton, BCM_SETSHIELD, 0, 1);
     ::SendMessage(hUnregisterButton, BCM_SETSHIELD, 0, 1);
 
@@ -409,7 +408,7 @@ void RegisterStartup(bool bRegister, HWND hDlg)
     CString registerExePath;
     {
         TCHAR modulePath[MAX_PATH];
-        GetModuleFileName(NULL, modulePath, MAX_PATH);
+        GetModuleFileName(nullptr, modulePath, MAX_PATH);
 
         TCHAR drive[MAX_PATH + 1], dir[MAX_PATH + 1], fname[MAX_PATH + 1], ext[MAX_PATH + 1];
         _wsplitpath_s(modulePath, drive, dir, fname, ext);
@@ -426,14 +425,14 @@ void RegisterStartup(bool bRegister, HWND hDlg)
     sei.hwnd = hDlg;
     sei.nShow = SW_SHOWNORMAL;
     sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-    sei.lpVerb = NULL;
-    sei.lpFile = (LPCWSTR)registerExePath;
+    sei.lpVerb = nullptr;
+    sei.lpFile = static_cast<LPCWSTR>(registerExePath);
 
     // 登録/解除指定
     sei.lpParameters = bRegister ? filename : L"/uninstall";
 
     // プロセス起動
-    if (!ShellExecuteEx(&sei) || (const int)sei.hInstApp <= 32) {
+    if (!ShellExecuteEx(&sei) || reinterpret_cast<const int>(sei.hInstApp) <= 32) {
         Logger::d(L"error ShellExecuteEx (%d)", GetLastError());
         return;
     }
@@ -447,7 +446,7 @@ void RegisterStartup(bool bRegister, HWND hDlg)
 
     Logger::d(L"done: %d", dwExitCode);
 
-    LPCWSTR message = NULL;
+    LPCWSTR message = nullptr;
     UINT uType = MB_OK;
     switch (dwExitCode) {
     case STARTUP_REGISTER_EXIT_CODE_FAILED_OPEN_KEY:
@@ -471,7 +470,7 @@ void RegisterStartup(bool bRegister, HWND hDlg)
         }
         break;
     }
-    if (message != NULL) {
+    if (message != nullptr) {
         MessageBoxW(hDlg, message, g_szAppTitle, uType);
     }
 
@@ -481,10 +480,10 @@ void RegisterStartup(bool bRegister, HWND hDlg)
 
 bool GetStartupRegValue(CString& strRegValue)
 {
-    HKEY hKey = NULL;
+    HKEY hKey = nullptr;
 
-    LSTATUS rval;
-    rval = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_QUERY_VALUE, &hKey);
+    LSTATUS rval = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0,
+                                 KEY_QUERY_VALUE, &hKey);
     if (rval != ERROR_SUCCESS) {
         Logger::d(L"cannot open key");
         return false;
@@ -499,9 +498,9 @@ bool GetStartupRegValue(CString& strRegValue)
     rval = RegQueryValueEx(
         hKey,
         TEXT("CompactMeter"),
-        0,
+        nullptr,
         &dwType,
-        (LPBYTE)lpData,
+        reinterpret_cast<LPBYTE>(lpData),
         &dwDataSize);
     if (rval != ERROR_SUCCESS) {
 
@@ -527,7 +526,7 @@ bool GetStartupRegValue(CString& strRegValue)
 int GetSelectedMeterConfigListIndex(HWND hList)
 {
     int iSelected = -1;
-    int n = ListView_GetItemCount(hList);
+    const int n = ListView_GetItemCount(hList);
     for (int i = 0; i < n; i++) {
         if (ListView_GetItemState(hList, i, LVIS_SELECTED) & LVIS_SELECTED) {
             iSelected = i;
@@ -540,9 +539,9 @@ int GetSelectedMeterConfigListIndex(HWND hList)
 
 void MoveMeterPos(const HWND &hDlg, bool moveToUp)
 {
-    HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
+    const HWND hList = GetDlgItem(hDlg, IDC_METER_CONFIG_LIST);
 
-    int iSelected = GetSelectedMeterConfigListIndex(hList);
+    const int iSelected = GetSelectedMeterConfigListIndex(hList);
     if (iSelected == -1) {
         Logger::d(L"no selection");
         return;
@@ -601,7 +600,7 @@ void SetMeterConfigListViewBackgroundColor(HWND hList, COLORREF backgroundColor,
 
     WCHAR szText[256];
     item.pszText = szText;
-    COLORREF c = MyUtil::direct2DColorToRGB(backgroundColor);
+    const COLORREF c = MyUtil::direct2DColorToRGB(backgroundColor);
     swprintf_s(szText, L"#%02X%02X%02X", GetRValue(c), GetGValue(c), GetBValue(c));
 
     ListView_SetItem(hList, &item);

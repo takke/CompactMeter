@@ -8,14 +8,14 @@ extern bool        g_dragging;
 extern IniConfig*  g_pIniConfig;
 extern MeterDrawer g_meterDrawer;
 
-CWorker::CWorker(void)
+CWorker::CWorker()
 {
-    myMutex = CreateMutex(NULL, TRUE, NULL);
+    myMutex = CreateMutex(nullptr, TRUE, nullptr);
     myExitFlag = false;
 }
 
 
-CWorker::~CWorker(void)
+CWorker::~CWorker()
 {
     CloseHandle(myMutex);
 }
@@ -27,7 +27,7 @@ void CWorker::SetParams(HWND hWnd)
 
 DWORD WINAPI CWorker::ThreadFunc(LPVOID lpParameter)
 {
-    return ((CWorker*)lpParameter)->ExecThread();
+    return static_cast<CWorker*>(lpParameter)->ExecThread();
 }
 
 DWORD WINAPI CWorker::ExecThread()
@@ -67,8 +67,7 @@ DWORD WINAPI CWorker::ExecThread()
     }
 
     while (true) {
-
-        DWORD start = GetTickCount();
+        const DWORD start = GetTickCount();
 
         if (!g_dragging) {
 
@@ -89,11 +88,11 @@ DWORD WINAPI CWorker::ExecThread()
 
             // 描画
 //            InvalidateRect(hWnd, NULL, FALSE);
-            HDC hdc = ::GetDC(hWnd);
+            const HDC hdc = ::GetDC(hWnd);
             g_meterDrawer.DrawToDC(hdc, hWnd, this);
             ::ReleaseDC(hWnd, hdc);
         }
-        DWORD elapsed = GetTickCount() - start;
+        const DWORD elapsed = GetTickCount() - start;
 
         int sleep = 1000 / g_pIniConfig->mFps - elapsed;
 
@@ -105,7 +104,7 @@ DWORD WINAPI CWorker::ExecThread()
 
         // 終了チェック
         WaitForSingleObject(myMutex, 0);
-        bool currentFlag = myExitFlag;
+        const bool currentFlag = myExitFlag;
         ReleaseMutex(myMutex);
         if (currentFlag) {
             break;
@@ -119,7 +118,7 @@ DWORD WINAPI CWorker::ExecThread()
         PdhCloseQuery(hCpuQuery[i]);
     }
     for (int i = 0; i < 26; i++) {
-        if (hDriveReadQuery[i] != NULL) {
+        if (hDriveReadQuery[i] != nullptr) {
             PdhCloseQuery(hDriveReadQuery[i]);
             PdhCloseQuery(hDriveWriteQuery[i]);
         }
@@ -135,7 +134,7 @@ bool CWorker::InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProces
 
     // 各コア
     for (int i = 0; i < nProcessors + 1; i++) {
-        if (PdhOpenQuery(NULL, 0, &hQuery[i]) != ERROR_SUCCESS) {
+        if (PdhOpenQuery(nullptr, 0, &hQuery[i]) != ERROR_SUCCESS) {
             Logger::d(L"CPUクエリーをオープンできません。%d", i);
             return false;
         }
@@ -147,14 +146,18 @@ bool CWorker::InitProcessors(std::vector<PDH_HQUERY> &hQuery, const int &nProces
     for (int i = 0; i < nProcessors; i++) {
         CString query;
         query.Format(L"\\Processor(%d)\\%% Processor Time", i);
-        PdhAddCounter(hQuery[i + 1], (LPCWSTR)query, 0, &hCounter[i + 1]);
+        PdhAddCounter(hQuery[i + 1], static_cast<LPCWSTR>(query), 0, &hCounter[i + 1]);
         PdhCollectQueryData(hQuery[i + 1]);
     }
 
     return true;
 }
 
-bool CWorker::InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<PDH_HQUERY> &hDriveWriteCounter, std::vector<PDH_HQUERY> &hDriveReadQuery, std::vector<PDH_HQUERY> &hDriveReadCounter, int &nDrives)
+bool CWorker::InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery,
+                         std::vector<PDH_HQUERY> &hDriveWriteCounter,
+                         std::vector<PDH_HQUERY> &hDriveReadQuery, 
+                         std::vector<PDH_HQUERY> &hDriveReadCounter, 
+                         int &nDrives)
 {
     hDriveWriteQuery.resize(26);
     hDriveWriteCounter.resize(26);
@@ -162,20 +165,20 @@ bool CWorker::InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<
     hDriveReadCounter.resize(26);
 
     // 各ドライブの種別、存在確認およびオープン
-    DWORD drives = ::GetLogicalDrives();
+    const DWORD drives = ::GetLogicalDrives();
     for (int i = 0, mask = 1; i < 26; i++, mask <<= 1) {
 
         if (!(drives & mask)) {
-            hDriveReadQuery[i] = NULL;
-            hDriveWriteQuery[i] = NULL;
-            hDriveReadCounter[i] = NULL;
-            hDriveWriteCounter[i] = NULL;
+            hDriveReadQuery[i] = nullptr;
+            hDriveWriteQuery[i] = nullptr;
+            hDriveReadCounter[i] = nullptr;
+            hDriveWriteCounter[i] = nullptr;
             continue;
         }
 
         CStringA letter;
         letter.Format("%c:\\", 'A' + i);
-        UINT driveType = GetDriveTypeA(letter);
+        const UINT driveType = GetDriveTypeA(letter);
         LPCWSTR driveTypeText;
         switch (driveType) {
         case DRIVE_REMOVABLE:
@@ -200,19 +203,19 @@ bool CWorker::InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<
             break;
         default:
             Logger::d(L"Drive %c skip (%s)", 'A' + i, driveTypeText);
-            hDriveReadQuery[i] = NULL;
-            hDriveWriteQuery[i] = NULL;
-            hDriveReadCounter[i] = NULL;
-            hDriveWriteCounter[i] = NULL;
+            hDriveReadQuery[i] = nullptr;
+            hDriveWriteQuery[i] = nullptr;
+            hDriveReadCounter[i] = nullptr;
+            hDriveWriteCounter[i] = nullptr;
             continue;
         }
 
         // OpenQuery
-        if (PdhOpenQuery(NULL, 0, &hDriveReadQuery[i]) != ERROR_SUCCESS) {
+        if (PdhOpenQuery(nullptr, 0, &hDriveReadQuery[i]) != ERROR_SUCCESS) {
             Logger::d(L"DriveReadクエリーをオープンできません。%d", i);
             return false;
         }
-        if (PdhOpenQuery(NULL, 0, &hDriveWriteQuery[i]) != ERROR_SUCCESS) {
+        if (PdhOpenQuery(nullptr, 0, &hDriveWriteQuery[i]) != ERROR_SUCCESS) {
             Logger::d(L"DriveWriteクエリーをオープンできません。%d", i);
             return false;
         }
@@ -223,19 +226,19 @@ bool CWorker::InitDrives(std::vector<PDH_HQUERY> &hDriveWriteQuery, std::vector<
 
     for (int i = 0; i < 26; i++) {
 
-        if (hDriveReadQuery[i] != NULL) {
+        if (hDriveReadQuery[i] != nullptr) {
             CString query;
             query.Format(L"\\LogicalDisk(%c:)\\Disk Read Bytes/sec", 'A' + i);
-            PdhAddCounter(hDriveReadQuery[i], (LPCWSTR)query, 0, &hDriveReadCounter[i]);
+            PdhAddCounter(hDriveReadQuery[i], static_cast<LPCWSTR>(query), 0, &hDriveReadCounter[i]);
             PdhCollectQueryData(hDriveReadQuery[i]);
 
             Logger::d(L" add counter %c [%s]", 'A' + i, query);
         }
 
-        if (hDriveWriteQuery[i] != NULL) {
+        if (hDriveWriteQuery[i] != nullptr) {
             CString query;
             query.Format(L"\\LogicalDisk(%c:)\\Disk Write Bytes/sec", 'A' + i);
-            PdhAddCounter(hDriveWriteQuery[i], (LPCWSTR)query, 0, &hDriveWriteCounter[i]);
+            PdhAddCounter(hDriveWriteQuery[i], static_cast<LPCWSTR>(query), 0, &hDriveWriteCounter[i]);
             PdhCollectQueryData(hDriveWriteQuery[i]);
 
             Logger::d(L" add counter %c [%s]", 'A' + i, query);
@@ -252,12 +255,12 @@ void CWorker::CollectCpuUsage(const int &nProcessors, std::vector<PDH_HQUERY> &h
 
     for (int i = 0; i < nProcessors + 1; i++) {
         PdhCollectQueryData(hQuery[i]);
-        PdhGetFormattedCounterValue(hCounter[i], PDH_FMT_LONG, NULL, &fntValue);
-        usage.usages[i] = (float)fntValue.longValue;
+        PdhGetFormattedCounterValue(hCounter[i], PDH_FMT_LONG, nullptr, &fntValue);
+        usage.usages[i] = static_cast<float>(fntValue.longValue);
     }
     cpuUsages.push_back(usage);
 
-    while (cpuUsages.size() > (size_t)g_pIniConfig->mFps) {
+    while (cpuUsages.size() > static_cast<size_t>(g_pIniConfig->mFps)) {
         cpuUsages.erase(cpuUsages.begin());
     }
 }
@@ -267,7 +270,7 @@ void CWorker::CollectDriveUsage(int nDrives, std::vector<PDH_HQUERY> &hDriveRead
 {
     // 0.1秒に1回程度で十分
     static DWORD sLastTick = 0;
-    DWORD now = ::GetTickCount();
+    const DWORD now = ::GetTickCount();
     const DWORD interval = 100; // ms
     if (now - sLastTick < interval) {
         // interval[ms] 経過していないので skip
@@ -283,16 +286,16 @@ void CWorker::CollectDriveUsage(int nDrives, std::vector<PDH_HQUERY> &hDriveRead
 
     int i = 0;
     for (int id = 0; id < 26; id++) {
-        if (hDriveReadQuery[id] != NULL) {
+        if (hDriveReadQuery[id] != nullptr) {
 
             // Read
             PdhCollectQueryData(hDriveReadQuery[id]);
-            PdhGetFormattedCounterValue(hDriveReadCounter[id], PDH_FMT_LONG, NULL, &fntValue);
+            PdhGetFormattedCounterValue(hDriveReadCounter[id], PDH_FMT_LONG, nullptr, &fntValue);
             usage.readUsages[i] = fntValue.longValue;
 
             // Write
             PdhCollectQueryData(hDriveWriteQuery[id]);
-            PdhGetFormattedCounterValue(hDriveWriteCounter[id], PDH_FMT_LONG, NULL, &fntValue);
+            PdhGetFormattedCounterValue(hDriveWriteCounter[id], PDH_FMT_LONG, nullptr, &fntValue);
             usage.writeUsages[i] = fntValue.longValue;
 
             usage.letters[i] = 'A' + id;
@@ -354,7 +357,7 @@ void CWorker::CollectTraffic()
         printf("no adapters");
     }
 
-    while (traffics.size() > (size_t)g_pIniConfig->mFps) {
+    while (traffics.size() > static_cast<size_t>(g_pIniConfig->mFps)) {
         traffics.erase(traffics.begin());
     }
 
@@ -371,12 +374,12 @@ void CWorker::Terminate()
 
 int CWorker::GetCpuUsage(CpuUsage* out)
 {
-    int n = (int)cpuUsages.size();
+    const int n = static_cast<int>(cpuUsages.size());
     if (n <= 0) {
         return 0;
     }
 
-    int nCore = (int)cpuUsages.begin()->usages.size();
+    const int nCore = static_cast<int>(cpuUsages.begin()->usages.size());
 
     // 初期化
     out->usages.resize(nCore);
@@ -385,7 +388,7 @@ int CWorker::GetCpuUsage(CpuUsage* out)
     }
 
     // 平均値を計算する
-    for (auto it = cpuUsages.begin(); it != cpuUsages.end(); it++) {
+    for (auto it = cpuUsages.begin(); it != cpuUsages.end(); ++it) {
         for (int c = 0; c < nCore; c++) {
             out->usages[c] += it->usages[c];
         }
@@ -399,12 +402,10 @@ int CWorker::GetCpuUsage(CpuUsage* out)
 
 void CWorker::GetDriveUsages(DriveUsage * out)
 {
-    int n = (int)driveUsages.size();
-
     // 0以外の最新のデータを集めて格納する
     out->letters = driveUsages.back().letters;
 
-    int nDrive = (int)out->letters.size();
+    const int nDrive = static_cast<int>(out->letters.size());
 
     out->readUsages.resize(nDrive);
     out->writeUsages.resize(nDrive);
@@ -413,7 +414,7 @@ void CWorker::GetDriveUsages(DriveUsage * out)
 
         // drive[i] について0以外のデータを最新から探す
         out->readUsages[i] = 0;
-        for (auto it = driveUsages.rbegin(); it != driveUsages.rend(); it++) {
+        for (auto it = driveUsages.rbegin(); it != driveUsages.rend(); ++it) {
             if (it->readUsages[i] != 0) {
                 out->readUsages[i] = it->readUsages[i];
                 break;
@@ -421,7 +422,7 @@ void CWorker::GetDriveUsages(DriveUsage * out)
         }
 
         out->writeUsages[i] = 0;
-        for (auto it = driveUsages.rbegin(); it != driveUsages.rend(); it++) {
+        for (auto it = driveUsages.rbegin(); it != driveUsages.rend(); ++it) {
             if (it->writeUsages[i] != 0) {
                 out->writeUsages[i] = it->writeUsages[i];
                 break;

@@ -17,9 +17,9 @@ public:
     inline static bool GetModuleFileVersion(WORD version[4])
     {
         TCHAR             fileName[MAX_PATH + 1];
-        ::GetModuleFileName(NULL, fileName, sizeof(fileName));
+        ::GetModuleFileName(nullptr, fileName, sizeof(fileName));
 
-        DWORD size = ::GetFileVersionInfoSize(fileName, NULL);
+        const DWORD size = ::GetFileVersionInfoSize(fileName, nullptr);
 
         std::vector<BYTE> versionBuffer;
         versionBuffer.resize(size);
@@ -27,7 +27,7 @@ public:
         VS_FIXEDFILEINFO* pFileInfo;
         UINT              queryLen;
         if (::GetFileVersionInfo(fileName, NULL, size, &versionBuffer[0])) {
-            ::VerQueryValue(&versionBuffer[0], _T("\\"), (void**)&pFileInfo, &queryLen);
+            ::VerQueryValue(&versionBuffer[0], _T("\\"), reinterpret_cast<void**>(&pFileInfo), &queryLen);
 
             version[0] = HIWORD(pFileInfo->dwFileVersionMS);
             version[1] = LOWORD(pFileInfo->dwFileVersionMS);
@@ -40,18 +40,18 @@ public:
         return false;
     }
 
-    inline static void GetAppNameWithVersion(CString& appname) {
+    inline static void GetAppNameWithVersion(CString& appName) {
 
-        appname.Format(L"%s ", g_szAppTitle);
+        appName.Format(L"%s ", g_szAppTitle);
 
         WORD version[4];
         if (GetModuleFileVersion(version)) {
             // バージョン情報は [3] を使用しない
-            appname.AppendFormat(L"Version %d.%d.%d", version[0], version[1], version[2]);
+            appName.AppendFormat(L"Version %d.%d.%d", version[0], version[1], version[2]);
 
             // AppVeyor のビルド番号を追加
 #ifdef APPVEYOR_BUILD_NUMBER_INT
-            appname.AppendFormat(L" (Build #%d)", APPVEYOR_BUILD_NUMBER_INT);
+            appName.AppendFormat(L" (Build #%d)", APPVEYOR_BUILD_NUMBER_INT);
 #endif
         }
 

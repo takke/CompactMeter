@@ -81,14 +81,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     g_pIniConfig->Load();
     g_meterDrawer.InitMeterGuide();
 
-    CString appname;
-    MyUtil::GetAppNameWithVersion(appname);
+    CString appName;
+    MyUtil::GetAppNameWithVersion(appName);
 
     // 幅から最適な縦サイズを算出する
     const int width = g_pIniConfig->mWindowWidth;
     const int newHeight = MyUtil::CalcMeterWindowHeight(width);
 
-    HWND hWnd = CreateWindowW(g_szWindowClass, appname,
+    const HWND hWnd = CreateWindowW(g_szWindowClass, appName,
         WS_POPUP,
         g_pIniConfig->mPosX, g_pIniConfig->mPosY,
         width, newHeight, nullptr, nullptr, hInstance, nullptr);
@@ -106,7 +106,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     }
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_COMPACTMETER));
+    const HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_COMPACTMETER));
 
     MSG msg;
 
@@ -114,7 +114,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     while (GetMessage(&msg, nullptr, 0, 0))
     {
         // モードレスダイアログはここで処理しない
-        if (g_hConfigDlgWnd != NULL && IsDialogMessage(g_hConfigDlgWnd, &msg)) {
+        if (g_hConfigDlgWnd != nullptr && IsDialogMessage(g_hConfigDlgWnd, &msg)) {
             continue;
         }
 
@@ -127,11 +127,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     Logger::Close();
     
-    return (int) msg.wParam;
+    return static_cast<int>(msg.wParam);
 }
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
+    // ReSharper disable once IdentifierTypo
     WNDCLASSEXW wcex;
 
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -143,8 +144,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hInstance      = hInstance;
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_COMPACTMETER));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = NULL;// MAKEINTRESOURCEW(IDC_COMPACTMETER);
+    wcex.hbrBackground  = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+    wcex.lpszMenuName   = nullptr;// MAKEINTRESOURCEW(IDC_COMPACTMETER);
     wcex.lpszClassName  = g_szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -160,11 +161,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
         {
             // DPI取得
-            auto dc = GetWindowDC(NULL);
+            const auto dc = GetWindowDC(nullptr);
             g_dpiX = GetDeviceCaps(dc, LOGPIXELSX);
             g_dpiY = GetDeviceCaps(dc, LOGPIXELSY);
             g_dpiScale = g_dpiX / 96.0f;
-            ReleaseDC(NULL, dc);
+            ReleaseDC(nullptr, dc);
 
             // GDI+, Direct2D 初期化
             g_meterDrawer.Init(hWnd, g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
@@ -174,10 +175,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_pWorker->SetParams(hWnd);
 
             // スレッドの作成 
-            HANDLE hThread = CreateThread(NULL, 0,
-                CWorker::ThreadFunc, (LPVOID)g_pWorker,
+            const HANDLE hThread = CreateThread(nullptr, 0,
+                CWorker::ThreadFunc, static_cast<LPVOID>(g_pWorker),
                 CREATE_SUSPENDED, &g_threadId);
-            if (hThread == FALSE) {
+            if (hThread == nullptr) {
                 exit(0);
             }
 
@@ -207,7 +208,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         case WM_LBUTTONDOWN:
             {
-                BOOL visible = ::IsWindowVisible(hWnd);
+                const BOOL visible = ::IsWindowVisible(hWnd);
                 Logger::d(L"visible: %s", (visible ? L"yes" : L"no"));
                 ::ShowWindow(hWnd, visible ? SW_HIDE : SW_SHOW);
             }
@@ -217,7 +218,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_COMMAND:
         {
-            int wmId = LOWORD(wParam);
+            const int wmId = LOWORD(wParam);
             // 選択されたメニューの解析:
             switch (wmId)
             {
@@ -350,18 +351,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_EXITSIZEMOVE:
-        ClipCursor(NULL);
+        ClipCursor(nullptr);
         break;
 
     case WM_MOVING:
-        ClipMovingArea(&rectDesktop, (LPRECT)lParam);
+        ClipMovingArea(&rectDesktop, reinterpret_cast<LPRECT>(lParam));
         break;
 
     case WM_MOVE:
         {
             // 移動 => INIに位置を保存
-            int x = LOWORD(lParam);
-            int y = HIWORD(lParam);
+            const int x = LOWORD(lParam);
+            const int y = HIWORD(lParam);
             g_pIniConfig->mPosX = x;
             g_pIniConfig->mPosY = y;
             g_pIniConfig->Save();
@@ -370,7 +371,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_GETMINMAXINFO:
         MINMAXINFO *pmmi;
-        pmmi = (MINMAXINFO*)lParam;
+        pmmi = reinterpret_cast<MINMAXINFO*>(lParam);
         pmmi->ptMinTrackSize.x = MAIN_WINDOW_MIN_WIDTH;
         pmmi->ptMinTrackSize.y = MAIN_WINDOW_MIN_HEIGHT;
         return 0;
@@ -380,7 +381,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_dpiX = LOWORD(wParam);
         g_dpiY = HIWORD(wParam);
         g_dpiScale = g_dpiX / 96.0f;
-        g_meterDrawer.SetDpi((float)g_dpiX, (float)g_dpiY);
+        g_meterDrawer.SetDpi(static_cast<float>(g_dpiX), static_cast<float>(g_dpiY));
         return 0;
 
     case WM_CONFIG_DLG_UPDATED:
@@ -398,7 +399,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             // 描画中にサイズ変更すると画面が乱れるためロックする
             g_meterDrawer.criticalSection.Lock();
-            ::SetWindowPos(g_hWnd, NULL, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+            ::SetWindowPos(g_hWnd, nullptr, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
             g_meterDrawer.criticalSection.Unlock();
             return 0;
         }
@@ -411,7 +412,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void UpdateMyWindowSize(WPARAM wParam, LPARAM lParam)
 {
-    RECT* rc = (RECT*)lParam;
+    RECT* rc = reinterpret_cast<RECT*>(lParam);
     const int width = rc->right - rc->left;
     const int height = rc->bottom - rc->top;
 
@@ -456,7 +457,7 @@ void ClipMovingArea(LPRECT rcDesktop, LPRECT rcWindow)
 void OnPaint(const HWND &hWnd)
 {
     PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hWnd, &ps);
+    const HDC hdc = BeginPaint(hWnd, &ps);
 
     g_meterDrawer.DrawToDC(hdc, hWnd, g_pWorker);
 
@@ -473,8 +474,8 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
     GetClientRect(hWnd, &rt);
 
     const float BORDER_SIZE = 16 * g_dpiScale;
-    const float width = (float)rt.right;
-    const float height = (float)rt.bottom;
+    const auto width = static_cast<float>(rt.right);
+    const auto height = static_cast<float>(rt.bottom);
 
     // カーソル位置判定
     int cursorEdge = 0;    // WM_SIZING の wParam と同じ値(1～8)を設定する(範囲外は0)
@@ -516,7 +517,7 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
     //    break;
     case WMSZ_LEFT:
     case WMSZ_RIGHT:
-        SetCursor((HCURSOR)LoadImage(NULL, IDC_SIZEWE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED));
+        SetCursor(static_cast<HCURSOR>(LoadImage(nullptr, IDC_SIZEWE, IMAGE_CURSOR, NULL, NULL, LR_DEFAULTCOLOR | LR_SHARED)));
         break;
     //case WMSZ_TOP:
     //case WMSZ_BOTTOM:
@@ -582,7 +583,7 @@ void OnMouseMove(const HWND &hWnd, const WPARAM & wParam, const LPARAM & lParam)
 
 void ShowConfigDlg(HWND &hWnd)
 {
-    if (g_hConfigDlgWnd == NULL) {
+    if (g_hConfigDlgWnd == nullptr) {
         Logger::d(L"Create config dlg");
         g_hConfigDlgWnd = CreateDialog(g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), hWnd, ConfigDlgProc);
     }
@@ -641,7 +642,7 @@ void ShowPopupMenu(const HWND &hWnd, POINT &pt)
     SetForegroundWindow(hWnd);
 
     Logger::d(L"Show Popup menu");
-    TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, NULL);
+    TrackPopupMenu(hSubMenu, TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, nullptr);
     Logger::d(L"Close Popup menu");
 }
 
