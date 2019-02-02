@@ -26,6 +26,7 @@ public:
     long mTrafficMax = 300 * MB;
 
     bool mAlwaysOnTop = true;
+    bool mFitToDesktop = true;
     bool mDrawBorder = true;
 
     // メーターの列数

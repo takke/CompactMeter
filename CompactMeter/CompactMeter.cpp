@@ -58,6 +58,7 @@ void                ShowPopupMenu(const HWND &hWnd, POINT &pt);
 void                ToggleBorder();
 void                ToggleDebugMode();
 void                ToggleAlwaysOnTop(const HWND &hWnd);
+void                ToggleFitToDesktop();
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -197,6 +198,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_NOTIFYTASKTRAYICON:
 //        Logger::d(L"0x%08x, 0x%08x", lParam, wParam);
+
+        // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
         switch (lParam) {
         case WM_RBUTTONUP:
             {
@@ -233,6 +236,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case ID_POPUPMENU_ALWAYSONTOP:
                 ToggleAlwaysOnTop(hWnd);
+                return 0L;
+            case ID_POPUPMENU_FIT_TO_DESKTOP:
+                ToggleFitToDesktop();
                 return 0L;
             case ID_POPUPMENU_DEBUGMODE:
                 ToggleDebugMode();
@@ -293,6 +299,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Toggle AlwaysOnTop
             ToggleAlwaysOnTop(hWnd);
             return 0L;
+
+        case 'F':
+            // Toggle Fit to Desktop
+            ToggleFitToDesktop();
+            return 0L;
         }
         break;
 
@@ -345,17 +356,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     // 移動範囲をデスクトップに限定する
     case WM_ENTERSIZEMOVE:
-        SystemParametersInfo(SPI_GETWORKAREA, 0, &rectDesktop, 0);
-        Logger::d(L"desktop: [%d, %d], [%d, %d]", rectDesktop.left, rectDesktop.top, rectDesktop.right, rectDesktop.bottom);
-        ClipCursor(&rectDesktop);
+        if (g_pIniConfig->mFitToDesktop) {
+            SystemParametersInfo(SPI_GETWORKAREA, 0, &rectDesktop, 0);
+            Logger::d(L"desktop: [%d, %d], [%d, %d]", rectDesktop.left, rectDesktop.top, rectDesktop.right, rectDesktop.bottom);
+            ClipCursor(&rectDesktop);
+        }
         break;
 
     case WM_EXITSIZEMOVE:
-        ClipCursor(nullptr);
+        if (g_pIniConfig->mFitToDesktop) {
+            ClipCursor(nullptr);
+        }
         break;
 
     case WM_MOVING:
-        ClipMovingArea(&rectDesktop, reinterpret_cast<LPRECT>(lParam));
+        if (g_pIniConfig->mFitToDesktop) {
+            ClipMovingArea(&rectDesktop, reinterpret_cast<LPRECT>(lParam));
+        }
         break;
 
     case WM_MOVE:
@@ -363,6 +380,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 移動 => INIに位置を保存
             const int x = LOWORD(lParam);
             const int y = HIWORD(lParam);
+//            Logger::d(L"WM_MOVE %d,%d", x, y);
             g_pIniConfig->mPosX = x;
             g_pIniConfig->mPosY = y;
             g_pIniConfig->Save();
@@ -636,6 +654,7 @@ void ShowPopupMenu(const HWND &hWnd, POINT &pt)
 
     // 初期チェック状態を反映
     CheckMenuItem(hSubMenu, ID_POPUPMENU_ALWAYSONTOP, MF_BYCOMMAND | (g_pIniConfig->mAlwaysOnTop ? MFS_CHECKED : MFS_UNCHECKED));
+    CheckMenuItem(hSubMenu, ID_POPUPMENU_FIT_TO_DESKTOP, MF_BYCOMMAND | (g_pIniConfig->mFitToDesktop ? MFS_CHECKED : MFS_UNCHECKED));
     CheckMenuItem(hSubMenu, ID_POPUPMENU_DEBUGMODE, MF_BYCOMMAND | (g_pIniConfig->mDebugMode ? MFS_CHECKED : MFS_UNCHECKED));
     CheckMenuItem(hSubMenu, ID_POPUPMENU_DRAW_BORDER, MF_BYCOMMAND | (g_pIniConfig->mDrawBorder ? MFS_CHECKED : MFS_UNCHECKED));
 
@@ -668,3 +687,9 @@ void ToggleAlwaysOnTop(const HWND &hWnd)
     SetWindowPos(hWnd, g_pIniConfig->mAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
+void ToggleFitToDesktop()
+{
+    g_pIniConfig->mFitToDesktop = !g_pIniConfig->mFitToDesktop;
+    g_pIniConfig->Save();
+
+}

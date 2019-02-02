@@ -35,6 +35,7 @@ void IniConfig::Load()
     mDebugMode = ReadBoolEntry(L"DebugMode", false);
     mCloseByESC = ReadBoolEntry(L"CloseByESC", true);
     mAlwaysOnTop = ReadBoolEntry(L"AlwaysOnTop", true);
+    mFitToDesktop = ReadBoolEntry(L"FitToDesktop", true);
     mDrawBorder = ReadBoolEntry(L"DrawBorder", true);
 
     mColumnCount = ReadIntEntry(L"ColumnCount", 2);
@@ -141,6 +142,7 @@ void IniConfig::Save()
     WriteIntEntry(L"DebugMode", mDebugMode ? 1 : 0);
     WriteIntEntry(L"CloseByESC", mCloseByESC ? 1 : 0);
     WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);
+    WriteIntEntry(L"FitToDesktop", mFitToDesktop ? 1 : 0);
     WriteIntEntry(L"DrawBorder", mDrawBorder ? 1 : 0);
 
     NormalizeColumnCount();
