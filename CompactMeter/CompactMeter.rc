@@ -47,6 +47,7 @@ BEGIN
     BEGIN
         MENUITEM "設定(&C)...",                   ID_POPUPMENU_SHOW_CONFIG_DIALOG
         MENUITEM "常に最上位に表示(&T)\tT",             ID_POPUPMENU_ALWAYSONTOP
+        MENUITEM "デスクトップの端にフィットさせる(&F)\tF",     ID_POPUPMENU_FIT_TO_DESKTOP
         MENUITEM "枠線(&B)\tB",                   ID_POPUPMENU_DRAW_BORDER
         MENUITEM SEPARATOR
         MENUITEM "バージョン情報(&A)...",              IDM_ABOUT
