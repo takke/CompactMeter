@@ -667,8 +667,10 @@ void MeterDrawer::DrawMeter(D2D1_RECT_F& rect, const MeterInfo& mi) const
         font_scale = 2.0f;
         break;
     case 2:
-    default: 
         font_scale = 1.4f;
+        break;
+    default:
+        font_scale = 1.0f;
         break;
     }
 
