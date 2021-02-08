@@ -187,9 +187,8 @@ HRESULT MeterDrawer::CreateDeviceResources(HWND hWnd, int width, int height)
 
     if (!m_pRenderTarget)
     {
-        FLOAT dpiX, dpiY;
-        m_pD2DFactory->GetDesktopDpi(&dpiX, &dpiY);
-        Logger::d(L"DPI: %.2f,%.2f", dpiX, dpiY);
+		UINT dpiX = GetDpiForWindow(hWnd);
+        Logger::d(L"DPI: %d", dpiX);
 
         // RenderTarget
         hr = m_pD2DFactory->CreateHwndRenderTarget(
