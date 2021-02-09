@@ -197,6 +197,7 @@ void IniConfig::WriteIntEntry(LPCTSTR key, int value)
 {
     CString v;
     v.Format(L"%d", value);
+//	Logger::d(L"%s = %d", key, value);
     WritePrivateProfileString(szAppName, key, v, mInifilePath);
 }
 
@@ -214,7 +215,9 @@ void IniConfig::ReadStringEntry(const LPCWSTR &key, const LPCWSTR &szDefault, AT
 
 int IniConfig::ReadIntEntry(LPCTSTR key, int defaultValue)
 {
-    return GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
+	const auto v = GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
+    Logger::d(L"READ %s = %d", key, v);
+    return v;
 }
 
 bool IniConfig::ReadBoolEntry(LPCTSTR key, bool defaultValue)

@@ -378,8 +378,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_MOVE:
         {
             // 移動 => INIに位置を保存
-            const int x = LOWORD(lParam);
-            const int y = HIWORD(lParam);
+            const int x = (int)(short) LOWORD(lParam);
+            const int y = (int)(short)HIWORD(lParam);
 //            Logger::d(L"WM_MOVE %d,%d", x, y);
             g_pIniConfig->mPosX = x;
             g_pIniConfig->mPosY = y;
