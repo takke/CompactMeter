@@ -139,11 +139,11 @@ void IniConfig::Save()
 
     WriteIntEntry(L"TrafficMax", mTrafficMax);
 
-    WriteIntEntry(L"DebugMode", mDebugMode ? 1 : 0);
-    WriteIntEntry(L"CloseByESC", mCloseByESC ? 1 : 0);
-    WriteIntEntry(L"AlwaysOnTop", mAlwaysOnTop ? 1 : 0);
-    WriteIntEntry(L"FitToDesktop", mFitToDesktop ? 1 : 0);
-    WriteIntEntry(L"DrawBorder", mDrawBorder ? 1 : 0);
+    WriteBoolEntry(L"DebugMode", mDebugMode);
+    WriteBoolEntry(L"CloseByESC", mCloseByESC);
+    WriteBoolEntry(L"AlwaysOnTop", mAlwaysOnTop);
+    WriteBoolEntry(L"FitToDesktop", mFitToDesktop);
+    WriteBoolEntry(L"DrawBorder", mDrawBorder);
 
     NormalizeColumnCount();
     WriteIntEntry(L"ColumnCount", mColumnCount);
@@ -218,6 +218,11 @@ int IniConfig::ReadIntEntry(LPCTSTR key, int defaultValue)
 	const auto v = GetPrivateProfileInt(szAppName, key, defaultValue, mInifilePath);
     Logger::d(L"READ %s = %d", key, v);
     return v;
+}
+
+void IniConfig::WriteBoolEntry(LPCTSTR key, bool value)
+{
+    WriteIntEntry(key, value ? 1 : 0);
 }
 
 bool IniConfig::ReadBoolEntry(LPCTSTR key, bool defaultValue)

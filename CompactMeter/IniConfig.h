@@ -54,6 +54,7 @@ private:
     void WriteIntEntry(LPCTSTR key, int value);
     void ReadStringEntry(const LPCWSTR &key, const LPCWSTR &szDefault, ATL::CString &s);
     int ReadIntEntry(LPCTSTR key, int defaultValue);
+    void WriteBoolEntry(LPCTSTR key, bool value);
     bool ReadBoolEntry(LPCTSTR key, bool defaultValue);
 };
 
