@@ -373,7 +373,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     // 移動範囲をデスクトップに限定する
     case WM_ENTERSIZEMOVE:
         if (g_pIniConfig->mFitToDesktop) {
+
+        	// 現在のカーソル位置のデスクトップに限定する
+            POINT pt;
+            GetCursorPos(&pt);
+
+        	// 念のため取得しておく
             SystemParametersInfo(SPI_GETWORKAREA, 0, &rectDesktop, 0);
+
+        	// 現在のデスクトップを探す
+        	for (u_int i=0; i<g_desktops.size(); i++) {
+        		if (PtInRect(&g_desktops[i], pt)) {
+                    Logger::d(L"desktop: %d", i);
+                    rectDesktop = g_desktops[i];
+                    break;
+        		}
+        	}
+        	
             Logger::d(L"desktop: [%d, %d], [%d, %d]", rectDesktop.left, rectDesktop.top, rectDesktop.right, rectDesktop.bottom);
             ClipCursor(&rectDesktop);
         }
