@@ -3,7 +3,7 @@
 #include "MeterConfig.h"
 #include "Const.h"
 
-class IniConfig
+class IniConfig  // NOLINT(cppcoreguidelines-special-member-functions)
 {
 public:
     CString mInifilePath;
@@ -20,8 +20,8 @@ public:
 
     // 設定値
     int mFps = 30;
-    const int FPS_MIN = 10;
-    const int FPS_MAX = 60;
+    const int fpsMin = 10;
+    const int fpsMax = 60;
 
     long mTrafficMax = 300 * MB;
 

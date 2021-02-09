@@ -162,11 +162,11 @@ void IniConfig::Save()
 
 void IniConfig::NormalizeFps()
 {
-    if (mFps < FPS_MIN) {
-        mFps = FPS_MIN;
+    if (mFps < fpsMin) {
+        mFps = fpsMin;
     }
-    else if (mFps > FPS_MAX) {
-        mFps = FPS_MAX;
+    else if (mFps > fpsMax) {
+        mFps = fpsMax;
     }
 }
 
