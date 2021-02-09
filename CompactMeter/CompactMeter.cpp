@@ -261,9 +261,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_PAINT:
-    case WM_DISPLAYCHANGE:
         OnPaint(hWnd);
         break;
+    	
+    case WM_DISPLAYCHANGE:
+        OnPaint(hWnd);
+
+    	// ディスプレイの配置情報を再取得する
+        g_desktops.clear();
+        EnumDisplayMonitors(nullptr, nullptr, MyMonitorEnumProc, 0);
+
+    	break;
 
     case WM_ERASEBKGND:
         // サイズ変更時にちらつかないようにする
