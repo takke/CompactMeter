@@ -31,8 +31,8 @@ public:
 
     // メーターの列数
     int mColumnCount = 2;
-    const int COLUMN_COUNT_MIN = 1;
-    const int COLUMN_COUNT_MAX = 6;
+    const int columnCountMin = 1;
+    const int columnCountMax = 20;
 
     // 各メーターの設定値(および順序)
     std::vector<MeterConfig> mMeterConfigs;

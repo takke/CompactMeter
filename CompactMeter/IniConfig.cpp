@@ -171,11 +171,11 @@ void IniConfig::NormalizeFps()
 }
 
 void IniConfig::NormalizeColumnCount() {
-    if (mColumnCount < COLUMN_COUNT_MIN) {
-        mColumnCount = COLUMN_COUNT_MIN;
+    if (mColumnCount < columnCountMin) {
+        mColumnCount = columnCountMin;
     }
-    else if (mColumnCount > COLUMN_COUNT_MAX) {
-        mColumnCount = COLUMN_COUNT_MAX;
+    else if (mColumnCount > columnCountMax) {
+        mColumnCount = columnCountMax;
     }
 }
 
