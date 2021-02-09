@@ -74,7 +74,7 @@ Direct2D 対応なのでCPU負荷を低く抑えています。
 ## 開発メモ
 
 ### 前提
-- 開発環境: Visual Studio Community 2017
+- 開発環境: Visual Studio Community 2019
 - OS: Windows 10 Pro 64bit
 - 7-Zip (64bit版)
 - デジタル署名する場合：コード証明書がインストール済みであること
