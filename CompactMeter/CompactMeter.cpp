@@ -41,6 +41,9 @@ bool        g_dragging = false;
 // 設定画面
 HWND        g_hConfigDlgWnd = nullptr;
 
+// 全ディスプレイ情報
+std::vector<RECT> g_desktops;
+
 
 //--------------------------------------------------
 // プロトタイプ宣言
@@ -59,6 +62,7 @@ void                ToggleBorder();
 void                ToggleDebugMode();
 void                ToggleAlwaysOnTop(const HWND &hWnd);
 void                ToggleFitToDesktop();
+BOOL CALLBACK       MyMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -167,6 +171,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_dpiY = GetDeviceCaps(dc, LOGPIXELSY);
             g_dpiScale = g_dpiX / 96.0f;
             ReleaseDC(nullptr, dc);
+
+    		// 全ディスプレイの座標を取得しておく
+            g_desktops.clear();
+            EnumDisplayMonitors(nullptr, nullptr, MyMonitorEnumProc, 0);
 
             // GDI+, Direct2D 初期化
             g_meterDrawer.Init(hWnd, g_pIniConfig->mWindowWidth, g_pIniConfig->mWindowHeight);
@@ -692,4 +700,17 @@ void ToggleFitToDesktop()
     g_pIniConfig->mFitToDesktop = !g_pIniConfig->mFitToDesktop;
     g_pIniConfig->Save();
 
+}
+
+BOOL CALLBACK MyMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+    MONITORINFOEX monitorInfo;
+
+    monitorInfo.cbSize = sizeof(monitorInfo);
+    GetMonitorInfo(hMonitor, &monitorInfo);
+
+    Logger::d(L"MonitorInfo: %d, %d, %d, %d", monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top, monitorInfo.rcMonitor.right, monitorInfo.rcMonitor.bottom);
+    g_desktops.push_back(monitorInfo.rcMonitor);
+
+    return TRUE;
 }
