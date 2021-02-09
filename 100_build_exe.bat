@@ -10,7 +10,7 @@ if "%APPVEYOR%"=="True" (
     set SLN_PATH="%APPVEYOR_BUILD_FOLDER%\CompactMeter.sln"
 ) else (
     set EXTRA_CMD=
-    set MSBUILD_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe"
+    set MSBUILD_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin\MSBuild.exe"
     set SLN_PATH=CompactMeter.sln
 )
 

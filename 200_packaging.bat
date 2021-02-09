@@ -44,7 +44,7 @@ if "%APPVEYOR%"=="True" (
     echo.
     echo sign
     echo.
-    set SIGNTOOL="C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x64\signtool"
+    set SIGNTOOL="C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool"
     %SIGNTOOL% sign /a /fd SHA256 /v /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 ^
         %WORK_DIR%\CompactMeter.exe ^
         %WORK_DIR%\CompactMeter_64.exe ^
